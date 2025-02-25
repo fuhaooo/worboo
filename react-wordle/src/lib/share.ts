@@ -1,5 +1,5 @@
 import { getGuessStatuses } from './statuses'
-import { solutionIndex, unicodeSplit } from './words'
+import { unicodeSplit, loadDailyState } from './words'
 import { GAME_TITLE } from '../constants/strings'
 import { MAX_CHALLENGES } from '../constants/settings'
 import { UAParser } from 'ua-parser-js'
@@ -20,8 +20,10 @@ export const shareStatus = (
   isHighContrastMode: boolean,
   handleShareToClipboard: () => void
 ) => {
+  const state = loadDailyState()
+  const wordIndex = state ? state.currentWordIndex + 1 : 1
   const textToShare =
-    `${GAME_TITLE} ${solutionIndex} ${
+    `${GAME_TITLE} Word ${wordIndex} ${
       lost ? 'X' : guesses.length
     }/${MAX_CHALLENGES}${isHardMode ? '*' : ''}\n\n` +
     generateEmojiGrid(
@@ -84,8 +86,9 @@ export const generateProof = async (
   const proof = await workerApi.prove_play(solution, guesses)
   console.log('proof', proof)
 
+  const dailyState = loadDailyState()
   const storor = {
-    solutionIndex,
+    solutionIndex: dailyState.currentWordIndex,
     proof,
     diffs,
   }

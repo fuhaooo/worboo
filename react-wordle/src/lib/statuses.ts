@@ -6,29 +6,51 @@ export const getStatuses = (
   solution: string,
   guesses: string[]
 ): { [key: string]: CharStatus } => {
-  const charObj: { [key: string]: CharStatus } = {}
-  const splitSolution = unicodeSplit(solution)
+  const charStatuses: { [key: string]: CharStatus } = {}
+  const solutionLetters = unicodeSplit(solution)
+  
+  // 创建字母计数映射用于存在但位置错误的判断
+  const solutionLetterCounts: { [key: string]: number } = {}
+  solutionLetters.forEach(letter => {
+    solutionLetterCounts[letter] = (solutionLetterCounts[letter] || 0) + 1
+  })
 
-  guesses.forEach((word) => {
-    unicodeSplit(word).forEach((letter, i) => {
-      if (!splitSolution.includes(letter)) {
-        // make status absent
-        return (charObj[letter] = 'absent')
+  guesses.forEach(guess => {
+    const guessLetters = unicodeSplit(guess)
+    const tempSolutionCounts = { ...solutionLetterCounts }
+    const currentGuessStatuses: { [key: string]: CharStatus } = {}
+
+    // 第一遍检查正确位置字母
+    guessLetters.forEach((letter, i) => {
+      if (letter === solutionLetters[i]) {
+        currentGuessStatuses[letter] = 'correct'
+        tempSolutionCounts[letter] -= 1
       }
+    })
 
-      if (letter === splitSolution[i]) {
-        //make status correct
-        return (charObj[letter] = 'correct')
+    // 第二遍处理存在但位置错误的字母
+    guessLetters.forEach((letter, i) => {
+      if (letter !== solutionLetters[i]) {
+        if (tempSolutionCounts[letter] > 0) {
+          currentGuessStatuses[letter] = 'present'
+          tempSolutionCounts[letter] -= 1
+        } else {
+          currentGuessStatuses[letter] = 'absent'
+        }
       }
+    })
 
-      if (charObj[letter] !== 'correct') {
-        //make status present
-        return (charObj[letter] = 'present')
+    // 合并状态，保留最高优先级状态
+    Object.entries(currentGuessStatuses).forEach(([letter, status]) => {
+      if (!charStatuses[letter] || 
+          (status === 'correct') ||
+          (status === 'present' && charStatuses[letter] === 'absent')) {
+        charStatuses[letter] = status
       }
     })
   })
 
-  return charObj
+  return charStatuses
 }
 
 export const diffToStatus = (diff: number[][]): CharStatus[] => {
@@ -52,45 +74,39 @@ export const getGuessStatuses = (
   solution: string,
   guess: string
 ): CharStatus[] => {
-  const splitSolution = unicodeSplit(solution)
-  const splitGuess = unicodeSplit(guess)
-
-  const solutionCharsTaken = splitSolution.map((_) => false)
-
+  // 将答案和猜测统一转换为小写，防止大小写不匹配
+  const normalizedSolution = solution.toLowerCase()
+  const normalizedGuess = guess.toLowerCase()
+  
+  const splitSolution = unicodeSplit(normalizedSolution)
+  const splitGuess = unicodeSplit(normalizedGuess)
   const statuses: CharStatus[] = Array.from(Array(guess.length))
-
-  // handle all correct cases first
+  
+  // 创建答案中字母计数映射，用于记录每个字母可用的次数
+  const solutionLetterCounts: { [key: string]: number } = {}
+  splitSolution.forEach(letter => {
+    solutionLetterCounts[letter] = (solutionLetterCounts[letter] || 0) + 1
+  })
+  
+  // 第一遍：标记正确位置的字母（绿色），同时减少对应字母的计数
   splitGuess.forEach((letter, i) => {
     if (letter === splitSolution[i]) {
       statuses[i] = 'correct'
-      solutionCharsTaken[i] = true
-      return
+      solutionLetterCounts[letter]--
     }
   })
-
+  
+  // 第二遍：标记存在但位置错误的字母（黄色）或者字母不存在（灰色）
   splitGuess.forEach((letter, i) => {
-    if (statuses[i]) return
-
-    if (!splitSolution.includes(letter)) {
-      // handles the absent case
-      statuses[i] = 'absent'
-      return
-    }
-
-    // now we are left with "present"s
-    const indexOfPresentChar = splitSolution.findIndex(
-      (x, index) => x === letter && !solutionCharsTaken[index]
-    )
-
-    if (indexOfPresentChar > -1) {
-      statuses[i] = 'present'
-      // solutionCharsTaken[indexOfPresentChar] = true
-      return
-    } else {
-      statuses[i] = 'absent'
-      return
+    if (!statuses[i]) { // 忽略已标记为绿色的字母
+      if (solutionLetterCounts[letter] && solutionLetterCounts[letter] > 0) {
+        statuses[i] = 'present'
+        solutionLetterCounts[letter]--
+      } else {
+        statuses[i] = 'absent'
+      }
     }
   })
-
+  
   return statuses
 }

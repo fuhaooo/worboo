@@ -29,6 +29,9 @@ import {
   getCurrentSolution,
   markCurrentWordAsCompleted,
   getDailyProgress,
+  getRemainingGuessesForCurrentWord,
+  loadDailyState,
+  incrementGuessesForCurrentWord,
 } from './lib/words'
 import { addStatsForCompletedGame, loadStats } from './lib/stats'
 import {
@@ -45,6 +48,7 @@ import { useAlert } from './context/AlertContext'
 import { Navbar } from './components/navbar/Navbar'
 import { isInAppBrowser } from './lib/browser'
 import { MigrateStatsModal } from './components/modals/MigrateStatsModal'
+import { WordDetailModal } from './components/modals/WordDetailModal'
 
 function Home() {
   const prefersDarkMode = window.matchMedia(
@@ -59,6 +63,7 @@ function Home() {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false)
   const [isMigrateStatsModalOpen, setIsMigrateStatsModalOpen] = useState(false)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [isWordDetailModalOpen, setIsWordDetailModalOpen] = useState(false)
   const [currentRowClass, setCurrentRowClass] = useState('')
   const [isGameLost, setIsGameLost] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(
@@ -72,21 +77,28 @@ function Home() {
     getStoredIsHighContrastMode()
   )
   const [isRevealing, setIsRevealing] = useState(false)
-  const [solution, setSolution] = useState(() => getCurrentSolution())
+  // Initialize state from daily words
+  const [dailyState] = useState(() => loadDailyState())
+  const [solution, setSolution] = useState(() => dailyState.words[dailyState.currentWordIndex])
+  const [solutionText, setSolutionText] = useState(() => solution.text)
+  useEffect(() => {
+    setSolutionText(solution.text)
+  }, [solution])
+  const [currentWordLength, setCurrentWordLength] = useState(() => solution.length)
   const [dailyProgress, setDailyProgress] = useState(() => getDailyProgress())
   
   const [guesses, setGuesses] = useState<string[]>(() => {
     const loaded = loadGameStateFromLocalStorage()
-    if (loaded?.solution !== solution) {
+    if (loaded?.solution !== solutionText) {
       return []
     }
-    const gameWasWon = loaded.guesses.includes(solution)
+    const gameWasWon = loaded.guesses.includes(solutionText)
     if (gameWasWon) {
       setIsGameWon(true)
     }
     if (loaded.guesses.length === MAX_CHALLENGES && !gameWasWon) {
       setIsGameLost(true)
-      showErrorAlert(CORRECT_WORD_MESSAGE(solution), {
+      showErrorAlert(CORRECT_WORD_MESSAGE(solutionText), {
         persist: true,
       })
     }
@@ -135,7 +147,7 @@ function Home() {
         setIsInfoModalOpen(true)
       }, WELCOME_INFO_MODAL_MS)
     }
-  })
+  }, [])
 
   useEffect(() => {
     DISCOURAGE_INAPP_BROWSERS &&
@@ -184,7 +196,7 @@ function Home() {
   }
 
   useEffect(() => {
-    saveGameStateToLocalStorage({ guesses, solution })
+    saveGameStateToLocalStorage({ guesses, solution: solutionText })
   }, [guesses])
 
   useEffect(() => {
@@ -195,13 +207,17 @@ function Home() {
 
       showSuccessAlert(winMessage, {
         delayMs,
-        onClose: () => setIsStatsModalOpen(true),
+        onClose: () => {
+          setIsWordDetailModalOpen(true)
+          setTimeout(() => setIsStatsModalOpen(true), 100)
+        },
       })
     }
 
     if (isGameLost) {
       setTimeout(() => {
-        setIsStatsModalOpen(true)
+        setIsWordDetailModalOpen(true)
+        setTimeout(() => setIsStatsModalOpen(true), 100)
       }, (solution.length + 1) * REVEAL_TIME_MS)
     }
   }, [isGameWon, isGameLost, showSuccessAlert])
@@ -211,13 +227,15 @@ function Home() {
       showErrorAlert('Please connect your wallet first')
       return
     }
-    if (remainingGuesses <= 0) {
-      showErrorAlert('The number of guesses has been exhausted today')
+    
+    const remainingGuessesForWord = getRemainingGuessesForCurrentWord()
+    if (remainingGuessesForWord <= 0) {
+      showErrorAlert('You have used all 6 guesses for this word')
       return
     }
+    
     if (
-      unicodeLength(`${currentGuess}${value}`) <= solution.length &&
-      guesses.length < MAX_CHALLENGES &&
+      unicodeLength(`${currentGuess}${value}`) <= currentWordLength &&
       !isGameWon
     ) {
       setCurrentGuess(`${currentGuess}${value}`)
@@ -235,29 +253,33 @@ function Home() {
       showErrorAlert('Please connect your wallet first')
       return
     }
-    if (remainingGuesses <= 0) {
-      showErrorAlert('The number of guesses has been exhausted today')
+    
+    const remainingGuessesForWord = getRemainingGuessesForCurrentWord()
+    if (remainingGuessesForWord <= 0) {
+      showErrorAlert('You have used all 6 guesses for this word')
       return
     }
+    
     if (isGameWon || isGameLost) {
       return
     }
 
-    updateRemainingGuesses()
-
-    if (!(unicodeLength(currentGuess) === solution.length)) {
+    const guessLength = unicodeLength(currentGuess)
+    if (guessLength !== currentWordLength) {
       setCurrentRowClass('jiggle')
-      return showErrorAlert(NOT_ENOUGH_LETTERS_MESSAGE, {
+      const message = guessLength < currentWordLength ? NOT_ENOUGH_LETTERS_MESSAGE : `Word must be ${currentWordLength} letters long`
+      return showErrorAlert(message, {
         onClose: clearCurrentRowClass,
       })
     }
 
-    if (!isWordInWordList(currentGuess)) {
-      setCurrentRowClass('jiggle')
-      return showErrorAlert(WORD_NOT_FOUND_MESSAGE, {
-        onClose: clearCurrentRowClass,
-      })
-    }
+    // Temporarily disable word validation
+    // if (!isWordInWordList(currentGuess)) {
+    //   setCurrentRowClass('jiggle')
+    //   return showErrorAlert(WORD_NOT_FOUND_MESSAGE, {
+    //     onClose: clearCurrentRowClass,
+    //   })
+    // }
 
     // enforce hard mode - all guesses must contain all previously revealed letters
     if (isHardMode) {
@@ -288,19 +310,48 @@ function Home() {
       setCurrentGuess('')
 
       if (winningWord) {
+        incrementGuessesForCurrentWord()
         setStats(addStatsForCompletedGame(stats, guesses.length))
         const newState = markCurrentWordAsCompleted()
-        setSolution(newState.words[newState.currentWordIndex])
-        setDailyProgress(getDailyProgress())
-        setGuesses([])
-        setIsGameWon(false)
+        const progress = getDailyProgress()
+        
+        if (progress.completed >= 10) {
+          // All words completed, show final stats
+          setIsGameWon(true)
+          setTimeout(() => {
+            setIsStatsModalOpen(true)
+          }, REVEAL_TIME_MS * solution.length + 1)
+        } else {
+          // Move to next word
+          const nextWord = newState.words[newState.currentWordIndex]
+          setSolution(nextWord)
+          setCurrentWordLength(nextWord.length)
+          setDailyProgress(progress)
+          setGuesses([])
+          setIsGameWon(false)
+        }
         return
       }
 
-      if (guesses.length === MAX_CHALLENGES - 1) {
+      const guessCount = incrementGuessesForCurrentWord()
+      if (guessCount >= MAX_CHALLENGES) {
         setStats(addStatsForCompletedGame(stats, guesses.length + 1))
         setIsGameLost(true)
-        showErrorAlert(CORRECT_WORD_MESSAGE(solution), {
+        const newState = markCurrentWordAsCompleted() // Mark as failed
+        
+        if (getDailyProgress().completed >= 10) {
+          // All words attempted, show final stats
+          setTimeout(() => {
+            setIsWordDetailModalOpen(true)
+            setTimeout(() => setIsStatsModalOpen(true), 100)
+          }, REVEAL_TIME_MS * solution.length + 1)
+        } else {
+          // Show current word details before moving to next word
+          setTimeout(() => {
+            setIsWordDetailModalOpen(true)
+          }, REVEAL_TIME_MS * solution.length + 1)
+        }
+        showErrorAlert(CORRECT_WORD_MESSAGE(solution.text), {
           persist: true,
           delayMs: REVEAL_TIME_MS * solution.length + 1,
         })
@@ -319,26 +370,30 @@ function Home() {
         setIsStatsModalOpen={setIsStatsModalOpen}
         setIsSettingsModalOpen={setIsSettingsModalOpen}
         dailyProgress={{
-          completed: 10 - remainingGuesses,
+          completed: getDailyProgress().completed,
           total: 10,
-          currentIndex: 10 - remainingGuesses
+          currentIndex: getDailyProgress().completed
         }}
       />
       <div className="pt-2 px-1 pb-8 md:max-w-7xl w-full mx-auto sm:px-6 lg:px-8 flex flex-col grow">
         <div className="pb-6 grow">
+          <div className="text-center mb-4 text-xl font-bold dark:text-white">
+            The current word length is {currentWordLength}
+          </div>
           <Grid
-            solution={solution}
+            solution={solutionText}
             guesses={guesses}
             currentGuess={currentGuess}
             isRevealing={isRevealing}
             currentRowClassName={currentRowClass}
+            wordLength={currentWordLength}
           />
         </div>
         <Keyboard
           onChar={onChar}
           onDelete={onDelete}
           onEnter={onEnter}
-          solution={solution}
+          solution={solutionText}
           guesses={guesses}
           isRevealing={isRevealing}
         />
@@ -349,7 +404,7 @@ function Home() {
         <StatsModal
           isOpen={isStatsModalOpen}
           handleClose={() => setIsStatsModalOpen(false)}
-          solution={solution}
+          solution={solutionText}
           guesses={guesses}
           gameStats={stats}
           isGameLost={isGameLost}
@@ -380,6 +435,20 @@ function Home() {
           handleHighContrastMode={handleHighContrastMode}
         />
         <AlertContainer />
+        <WordDetailModal
+          isOpen={isWordDetailModalOpen}
+          handleClose={() => setIsWordDetailModalOpen(false)}
+          word={solution}
+          showNext={isGameWon || isGameLost}
+          onNext={() => {
+            const nextWord = dailyState.words[dailyState.currentWordIndex]
+            setSolution(nextWord)
+            setCurrentWordLength(nextWord.length)
+            setDailyProgress(getDailyProgress())
+            setGuesses([])
+            setIsGameLost(false)
+          }}
+        />
       </div>
       </div>
     </div>

@@ -207,7 +207,7 @@ function Verify() {
           <div className="flex-column items-center justify-center m-5">
             <div>
               <p className="text-xl font-bold dark:text-white mb-2.5 justify-center text-center">
-                Worboo #{proofData ? proofData.solutionIndex : -1}
+                👻Worboo #{proofData ? proofData.solutionIndex : -1}
               </p>
             </div>
             <div className="flex items-center justify-center">

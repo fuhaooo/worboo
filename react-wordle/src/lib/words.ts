@@ -1,6 +1,6 @@
-import { WORDS } from '../constants/wordlist'
-import { VALID_GUESSES } from '../constants/validGuesses'
+import { WORDS, Word, WORDS_BY_LENGTH, getWordsByLength, getRandomLength, getRandomWordByLength } from '../constants/wordlistCET4'
 import { WRONG_SPOT_MESSAGE, NOT_CONTAINED_MESSAGE } from '../constants/strings'
+import { MAX_CHALLENGES } from '../constants/settings'
 import { getGuessStatuses } from './statuses'
 import { default as GraphemeSplitter } from 'grapheme-splitter'
 
@@ -10,21 +10,49 @@ export const periodInDays = 1
 
 // 定义每日单词状态接口
 export interface DailyWords {
-  words: string[]        // 当天的10个单词
+  words: Word[]         // 当天的10个单词
   currentWordIndex: number  // 当前正在猜的单词索引
   completed: string[]    // 已完成的单词
   nextDay: number       // 下一天的时间戳
+  guessesForWord: { [key: string]: number } // 每个单词的猜测次数
 }
 
 export const isWordInWordList = (word: string) => {
-  return (
-    WORDS.includes(localeAwareLowerCase(word)) ||
-    VALID_GUESSES.includes(localeAwareLowerCase(word))
-  )
+  const solution = getCurrentSolution()
+  if (!solution) return false
+  
+  const wordLength = unicodeLength(word)
+  
+  // Check if the word length matches the current solution's length
+  if (wordLength !== solution.length) {
+    return false
+  }
+  
+  // The word length matches, so it's valid
+  return true
+}
+
+export const getGuessesForCurrentWord = () => {
+  const state = loadDailyState()
+  const currentWord = state.words[state.currentWordIndex].text
+  return state.guessesForWord[currentWord] || 0
+}
+
+export const incrementGuessesForCurrentWord = () => {
+  const state = loadDailyState()
+  const currentWord = state.words[state.currentWordIndex].text
+  state.guessesForWord[currentWord] = (state.guessesForWord[currentWord] || 0) + 1
+  saveDailyState(state)
+  return state.guessesForWord[currentWord]
+}
+
+export const getRemainingGuessesForCurrentWord = () => {
+  return MAX_CHALLENGES - getGuessesForCurrentWord()
 }
 
 export const isWinningWord = (word: string) => {
-  return getCurrentSolution() === word
+  const solution = getCurrentSolution()
+  return solution.text.toLowerCase() === word.toLowerCase()
 }
 
 // build a set of previously revealed letters - present and correct
@@ -67,7 +95,8 @@ export const findFirstUnusedReveal = (word: string, guesses: string[]) => {
 }
 
 export const unicodeSplit = (word: string) => {
-  return new GraphemeSplitter().splitGraphemes(word)
+  if (!word) return []
+  return new GraphemeSplitter().splitGraphemes(word.toString())
 }
 
 export const unicodeLength = (word: string) => {
@@ -130,12 +159,19 @@ export const getWordOfDay = (index: number) => {
 
 // 获取当天的10个单词
 export const getDailyWords = (today: Date): DailyWords => {
-  const index = getIndex(today)
-  const words: string[] = []
+  const words: Word[] = []
   
-  // 从词库中选择10个单词
-  for (let i = 0; i < 10; i++) {
-    words.push(getWordOfDay(index * 10 + i))
+  // 从词库中随机选择10个单词
+  while (words.length < 10) {
+    const length = getRandomLength()
+    const word = getRandomWordByLength(length)
+    if (word && !words.some(w => w.text === word.text)) {
+      // Add length to each word
+      words.push({
+        ...word,
+        length: unicodeLength(word.text)
+      })
+    }
   }
   
   return {
@@ -143,6 +179,7 @@ export const getDailyWords = (today: Date): DailyWords => {
     currentWordIndex: 0,
     completed: [],
     nextDay: getNextGameDate(today).valueOf(),
+    guessesForWord: {}
   }
 }
 
@@ -164,7 +201,23 @@ export const loadDailyState = (): DailyWords => {
   if (!state) {
     return getDailyWords(getToday())
   }
-  return JSON.parse(state)
+  const parsedState = JSON.parse(state)
+  
+  // Validate the state structure
+  if (!parsedState.words || !Array.isArray(parsedState.words) || parsedState.words.length === 0) {
+    return getDailyWords(getToday())
+  }
+  
+  // Ensure each word is a valid Word object
+  const validWords = parsedState.words.every((word: any) => 
+    word && typeof word === 'object' && typeof word.text === 'string'
+  )
+  
+  if (!validWords) {
+    return getDailyWords(getToday())
+  }
+  
+  return parsedState
 }
 
 // 保存每日状态
@@ -175,8 +228,13 @@ export const saveDailyState = (state: DailyWords) => {
 // 检查是否需要重置（新的一天）
 export const checkAndResetDaily = () => {
   const state = loadDailyState()
-  const now = new Date().valueOf()
+  if (!state || !state.nextDay) {
+    const newState = getDailyWords(getToday())
+    saveDailyState(newState)
+    return newState
+  }
   
+  const now = new Date().valueOf()
   if (now >= state.nextDay) {
     const newState = getDailyWords(getToday())
     saveDailyState(newState)
@@ -186,15 +244,28 @@ export const checkAndResetDaily = () => {
 }
 
 // 获取当前需要猜的单词
-export const getCurrentSolution = (): string => {
-  const state = checkAndResetDaily()
+export const getCurrentSolution = (): Word => {
+  const state = loadDailyState()
+  if (!state || !state.words || state.currentWordIndex >= state.words.length) {
+    // Provide a default word if state is invalid
+    return {
+      text: 'hello',
+      chineseDef: '你好',
+      englishDef: 'greeting',
+      length: 5
+    }
+  }
   return state.words[state.currentWordIndex]
 }
 
 // 标记当前单词为已完成并移到下一个单词
 export const markCurrentWordAsCompleted = () => {
   const state = loadDailyState()
-  const currentWord = state.words[state.currentWordIndex]
+  if (!state || !state.words || state.currentWordIndex >= state.words.length) {
+    return state
+  }
+  
+  const currentWord = state.words[state.currentWordIndex].text
   
   if (!state.completed.includes(currentWord)) {
     state.completed.push(currentWord)
@@ -219,6 +290,7 @@ export const getDailyProgress = () => {
 }
 
 // 导出兼容性变量
-const todaySolution = getSolution(getToday())
-export const solution = getCurrentSolution()
-export const { solutionIndex, tomorrow } = todaySolution
+export const currentWord = getCurrentSolution()
+export const solution = currentWord.text
+export const chineseDef = currentWord.chineseDef
+export const englishDef = currentWord.englishDef
