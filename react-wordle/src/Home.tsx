@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAccount } from 'wagmi'
 import { Grid } from './components/grid/Grid'
 import { Keyboard } from './components/keyboard/Keyboard'
 import { InfoModal } from './components/modals/InfoModal'
+import Spline from '@splinetool/react-spline'
 import { StatsModal } from './components/modals/StatsModal'
 import { SettingsModal } from './components/modals/SettingsModal'
 import {
@@ -22,9 +24,11 @@ import {
 import {
   isWordInWordList,
   isWinningWord,
-  solution,
   findFirstUnusedReveal,
   unicodeLength,
+  getCurrentSolution,
+  markCurrentWordAsCompleted,
+  getDailyProgress,
 } from './lib/words'
 import { addStatsForCompletedGame, loadStats } from './lib/stats'
 import {
@@ -68,6 +72,9 @@ function Home() {
     getStoredIsHighContrastMode()
   )
   const [isRevealing, setIsRevealing] = useState(false)
+  const [solution, setSolution] = useState(() => getCurrentSolution())
+  const [dailyProgress, setDailyProgress] = useState(() => getDailyProgress())
+  
   const [guesses, setGuesses] = useState<string[]>(() => {
     const loaded = loadGameStateFromLocalStorage()
     if (loaded?.solution !== solution) {
@@ -87,6 +94,32 @@ function Home() {
   })
 
   const [stats, setStats] = useState(() => loadStats())
+  const { address, isConnected } = useAccount()
+  const [remainingGuesses, setRemainingGuesses] = useState(10)
+
+  // 检查钱包连接状态和剩余猜测次数
+  useEffect(() => {
+    if (!isConnected) {
+      showErrorAlert('Please connect your wallet first', { persist: true })
+      return
+    }
+
+    // 从 localStorage 获取今天的猜测次数
+    const today = new Date().toISOString().split('T')[0]
+    const guessesKey = `${address}-${today}-guesses`
+    const usedGuesses = parseInt(localStorage.getItem(guessesKey) || '0')
+    setRemainingGuesses(10 - usedGuesses)
+  }, [isConnected, address])
+
+  // 更新剩余猜测次数
+  const updateRemainingGuesses = () => {
+    const today = new Date().toISOString().split('T')[0]
+    const guessesKey = `${address}-${today}-guesses`
+    const usedGuesses = parseInt(localStorage.getItem(guessesKey) || '0')
+    const newUsedGuesses = usedGuesses + 1
+    localStorage.setItem(guessesKey, newUsedGuesses.toString())
+    setRemainingGuesses(10 - newUsedGuesses)
+  }
 
   const [isHardMode, setIsHardMode] = useState(
     localStorage.getItem('gameMode')
@@ -174,6 +207,14 @@ function Home() {
   }, [isGameWon, isGameLost, showSuccessAlert])
 
   const onChar = (value: string) => {
+    if (!isConnected) {
+      showErrorAlert('Please connect your wallet first')
+      return
+    }
+    if (remainingGuesses <= 0) {
+      showErrorAlert('The number of guesses has been exhausted today')
+      return
+    }
     if (
       unicodeLength(`${currentGuess}${value}`) <= solution.length &&
       guesses.length < MAX_CHALLENGES &&
@@ -190,9 +231,19 @@ function Home() {
   }
 
   const onEnter = () => {
+    if (!isConnected) {
+      showErrorAlert('Please connect your wallet first')
+      return
+    }
+    if (remainingGuesses <= 0) {
+      showErrorAlert('The number of guesses has been exhausted today')
+      return
+    }
     if (isGameWon || isGameLost) {
       return
     }
+
+    updateRemainingGuesses()
 
     if (!(unicodeLength(currentGuess) === solution.length)) {
       setCurrentRowClass('jiggle')
@@ -238,7 +289,12 @@ function Home() {
 
       if (winningWord) {
         setStats(addStatsForCompletedGame(stats, guesses.length))
-        return setIsGameWon(true)
+        const newState = markCurrentWordAsCompleted()
+        setSolution(newState.words[newState.currentWordIndex])
+        setDailyProgress(getDailyProgress())
+        setGuesses([])
+        setIsGameWon(false)
+        return
       }
 
       if (guesses.length === MAX_CHALLENGES - 1) {
@@ -253,11 +309,20 @@ function Home() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col relative">
+      <div className="absolute inset-0 z-0">
+        <Spline scene="https://prod.spline.design/L1yMm4bIAw49zQIR/scene.splinecode" />
+      </div>
+      <div className="relative z-10 flex flex-col h-full backdrop-blur-sm bg-white/30 dark:bg-black/30">
       <Navbar
         setIsInfoModalOpen={setIsInfoModalOpen}
         setIsStatsModalOpen={setIsStatsModalOpen}
         setIsSettingsModalOpen={setIsSettingsModalOpen}
+        dailyProgress={{
+          completed: 10 - remainingGuesses,
+          total: 10,
+          currentIndex: 10 - remainingGuesses
+        }}
       />
       <div className="pt-2 px-1 pb-8 md:max-w-7xl w-full mx-auto sm:px-6 lg:px-8 flex flex-col grow">
         <div className="pb-6 grow">
@@ -298,6 +363,7 @@ function Home() {
           isDarkMode={isDarkMode}
           isHighContrastMode={isHighContrastMode}
           numberOfGuessesMade={guesses.length}
+          dailyProgress={dailyProgress}
         />
         <MigrateStatsModal
           isOpen={isMigrateStatsModalOpen}
@@ -314,6 +380,7 @@ function Home() {
           handleHighContrastMode={handleHighContrastMode}
         />
         <AlertContainer />
+      </div>
       </div>
     </div>
   )

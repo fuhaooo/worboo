@@ -1,4 +1,4 @@
-# Zordle: ZK Wordle
+# Worboo: ZK Wordle
 
 Zordle is [Wordle](https://www.nytimes.com/games/wordle/index.html), but with zero-knowledge proofs. Zordle uses ZK proofs to prove that a player knows words that map to their shared grid, but does not reveal those words to a verifier. Zordle is probably the first end-to-end web app built using [Halo 2](https://github.com/zcash/halo2/) ZK proofs!
 
@@ -183,3 +183,23 @@ Halo 2 is written in Rust and is currently only used by Zcash in their daemon so
 Feel free to hit me up if you have thoughts on any of the notes in this README, many of these are half-baked thoughts and ideas I'd like to flesh out :))
 
 Thanks to 0xPARC for hosting the learning group and to the 0xPARC community for discussions, reading drafts of this README and everything in between.
+
+
+# 优化内容
+
+## words.ts 的改动：
+- 添加接口来管理每日单词状态
+- 实现了获取、保存和重置每日状态的函数
+- 添加了处理单词完成和进度跟踪的功能
+## Home.tsx 的改动：
+- 添加了每日进度状态管理
+- 实现了完成单词后自动切换到下一个单词的逻辑
+- 只在完成所有单词后才显示统计信息
+## StatsModal.tsx 的改动：
+- 添加了每日进度显示
+- 显示已完成单词数和总单词数
+- 现在游戏的工作流程是：
+每天系统会生成10个新单词
+玩家每猜对一个单词后，会自动进入下一个单词
+界面会显示当前的进度（例如：3/10 words completed）
+只有在完成当天所有单词后才会显示统计信息

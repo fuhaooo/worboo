@@ -315,7 +315,7 @@ fn play(final_word: String) {
 
 fn main() {
     let final_word = "fluff".to_string();
-    println!("Welcome to zk wordle!");
+    println!("Welcome to Worboo!");
     println!("Enter play to play the game, verify to check a proof, or write to generate a new params file");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();

@@ -66,7 +66,7 @@ export const InfoModal = ({ isOpen, handleClose }: Props) => {
       </p>
       <p className="mt-6 italic text-sm text-gray-500 dark:text-gray-300">
         <a
-          href="https://github.com/nalinbhardwaj/halo-wordle"
+          href="https://github.com/fuhaooo/worboo"
           className="underline font-bold"
           target={'_blank'}
         >

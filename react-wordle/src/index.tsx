@@ -7,16 +7,30 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Home from './Home'
 import Verify from './Verify'
 
+import '@rainbow-me/rainbowkit/styles.css'
+import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
+import { WagmiConfig } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { config, chains } from './lib/wagmi'
+
+const queryClient = new QueryClient()
+
 ReactDOM.render(
   <React.StrictMode>
-    <AlertProvider>
-      <Router>
-        <Routes>
-          <Route path="/verify/:ipfsHash" element={<Verify />} />
-          <Route path="/" element={<Home />} />
-        </Routes>
-      </Router>
-    </AlertProvider>
+    <WagmiConfig client={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider chains={chains} theme={darkTheme()} modalSize="compact">
+          <AlertProvider>
+            <Router>
+              <Routes>
+                <Route path="/verify/:ipfsHash" element={<Verify />} />
+                <Route path="/" element={<Home />} />
+              </Routes>
+            </Router>
+          </AlertProvider>
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiConfig>
   </React.StrictMode>,
   document.getElementById('root')
 )
