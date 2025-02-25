@@ -13,6 +13,7 @@ export interface DailyWords {
   words: Word[]         // 当天的10个单词
   currentWordIndex: number  // 当前正在猜的单词索引
   completed: string[]    // 已完成的单词
+  attempted: string[]   // 已尝试过的单词（包括完成和未完成的）
   nextDay: number       // 下一天的时间戳
   guessesForWord: { [key: string]: number } // 每个单词的猜测次数
 }
@@ -160,24 +161,46 @@ export const getWordOfDay = (index: number) => {
 // 获取当天的10个单词
 export const getDailyWords = (today: Date): DailyWords => {
   const words: Word[] = []
+  const attempted: string[] = []
+  
+  // 从 localStorage 获取已尝试的单词
+  const dailyStateStr = localStorage.getItem('gameState')
+  if (dailyStateStr) {
+    try {
+      const dailyState = JSON.parse(dailyStateStr)
+      if (dailyState.attempted) {
+        attempted.push(...dailyState.attempted)
+      }
+    } catch (e) {
+      // 如果解析失败，忽略错误
+    }
+  }
   
   // 从词库中随机选择10个单词
-  while (words.length < 10) {
+  const maxAttempts = 50 // 防止无限循环
+  let attempts = 0
+  
+  while (words.length < 10 && attempts < maxAttempts) {
     const length = getRandomLength()
     const word = getRandomWordByLength(length)
-    if (word && !words.some(w => w.text === word.text)) {
+    // 检查单词是否已经在列表中或已经被尝试过
+    if (word && 
+        !words.some(w => w.text === word.text) && 
+        !attempted.includes(word.text)) {
       // Add length to each word
       words.push({
         ...word,
         length: unicodeLength(word.text)
       })
     }
+    attempts++
   }
   
   return {
     words,
     currentWordIndex: 0,
     completed: [],
+    attempted: [], // 初始化attempted数组
     nextDay: getNextGameDate(today).valueOf(),
     guessesForWord: {}
   }
@@ -201,23 +224,57 @@ export const loadDailyState = (): DailyWords => {
   if (!state) {
     return getDailyWords(getToday())
   }
-  const parsedState = JSON.parse(state)
-  
-  // Validate the state structure
-  if (!parsedState.words || !Array.isArray(parsedState.words) || parsedState.words.length === 0) {
-    return getDailyWords(getToday())
+
+  try {
+    const parsedState = JSON.parse(state)
+    const today = getToday()
+    const nextDay = getNextGameDate(today).valueOf()
+
+    // 检查是否是新的一天
+    if (parsedState.nextDay && parsedState.nextDay <= Date.now()) {
+      return getDailyWords(today)
+    }
+
+    // 验证并修复状态字段
+    const validState: DailyWords = {
+      words: Array.isArray(parsedState.words) && parsedState.words.length > 0 
+        ? parsedState.words.filter((word: any) => 
+            word && typeof word === 'object' && typeof word.text === 'string'
+          )
+        : getDailyWords(today).words,
+      currentWordIndex: typeof parsedState.currentWordIndex === 'number' && 
+        parsedState.currentWordIndex >= 0 && 
+        parsedState.currentWordIndex < 10
+        ? parsedState.currentWordIndex
+        : 0,
+      completed: Array.isArray(parsedState.completed) 
+        ? parsedState.completed.filter((word: string) => typeof word === 'string')
+        : [],
+      attempted: Array.isArray(parsedState.attempted)
+        ? parsedState.attempted.filter((word: string) => typeof word === 'string')
+        : [],
+      nextDay: nextDay,
+      guessesForWord: typeof parsedState.guessesForWord === 'object'
+        ? parsedState.guessesForWord
+        : {}
+    }
+
+    // 确保 words 数组中的每个单词都有正确的长度属性
+    validState.words = validState.words.map(word => ({
+      ...word,
+      length: unicodeLength(word.text)
+    }))
+
+    // 如果状态有效，返回修复后的状态
+    if (validState.words.length === 10) {
+      return validState
+    }
+  } catch (e) {
+    console.error('Error parsing daily state:', e)
   }
-  
-  // Ensure each word is a valid Word object
-  const validWords = parsedState.words.every((word: any) => 
-    word && typeof word === 'object' && typeof word.text === 'string'
-  )
-  
-  if (!validWords) {
-    return getDailyWords(getToday())
-  }
-  
-  return parsedState
+
+  // 如果状态无效或解析错误，返回新的状态
+  return getDailyWords(getToday())
 }
 
 // 保存每日状态
@@ -267,10 +324,12 @@ export const markCurrentWordAsCompleted = () => {
   
   const currentWord = state.words[state.currentWordIndex].text
   
-  if (!state.completed.includes(currentWord)) {
-    state.completed.push(currentWord)
+  // 将当前单词标记为已尝试（包括猜对和猜错的情况）
+  if (!state.attempted.includes(currentWord)) {
+    state.attempted.push(currentWord)
   }
   
+  // 直接将下标自增，切换到下一个单词
   if (state.currentWordIndex < state.words.length - 1) {
     state.currentWordIndex++
   }

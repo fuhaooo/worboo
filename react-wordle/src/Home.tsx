@@ -1,7 +1,11 @@
+// 导入React核心hooks和组件
 import { useState, useEffect } from 'react'
+// 导入Web3钱包相关hook
 import { useAccount } from 'wagmi'
+// 导入游戏主要组件
 import { Grid } from './components/grid/Grid'
 import { Keyboard } from './components/keyboard/Keyboard'
+// 导入各种模态框组件
 import { InfoModal } from './components/modals/InfoModal'
 import Spline from '@splinetool/react-spline'
 import { StatsModal } from './components/modals/StatsModal'
@@ -50,22 +54,31 @@ import { isInAppBrowser } from './lib/browser'
 import { MigrateStatsModal } from './components/modals/MigrateStatsModal'
 import { WordDetailModal } from './components/modals/WordDetailModal'
 
+// Home组件：游戏的主要组件
 function Home() {
+  // 检测系统是否处于深色模式
   const prefersDarkMode = window.matchMedia(
     '(prefers-color-scheme: dark)'
   ).matches
 
+  // 提示相关的hooks
   const { showError: showErrorAlert, showSuccess: showSuccessAlert } =
     useAlert()
-  const [currentGuess, setCurrentGuess] = useState('')
-  const [isGameWon, setIsGameWon] = useState(false)
+  // 游戏状态相关的state
+  const [currentGuess, setCurrentGuess] = useState('') // 当前猜测的单词
+  const [isGameWon, setIsGameWon] = useState(false)  // 游戏是否获胜
+  // 各种模态框的显示状态
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false)
   const [isMigrateStatsModalOpen, setIsMigrateStatsModalOpen] = useState(false)
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
   const [isWordDetailModalOpen, setIsWordDetailModalOpen] = useState(false)
+  // 当前行的样式类
   const [currentRowClass, setCurrentRowClass] = useState('')
+  // 游戏是否失败
   const [isGameLost, setIsGameLost] = useState(false)
+  // 深色模式状态管理
+  // 优先使用localStorage中存储的主题设置，如果没有则使用系统主题
   const [isDarkMode, setIsDarkMode] = useState(
     localStorage.getItem('theme')
       ? localStorage.getItem('theme') === 'dark'
@@ -73,6 +86,7 @@ function Home() {
       ? true
       : false
   )
+  // 高对比度模式状态
   const [isHighContrastMode, setIsHighContrastMode] = useState(
     getStoredIsHighContrastMode()
   )
@@ -86,7 +100,7 @@ function Home() {
   }, [solution])
   const [currentWordLength, setCurrentWordLength] = useState(() => solution.length)
   const [dailyProgress, setDailyProgress] = useState(() => getDailyProgress())
-  
+
   const [guesses, setGuesses] = useState<string[]>(() => {
     const loaded = loadGameStateFromLocalStorage()
     if (loaded?.solution !== solutionText) {
@@ -109,9 +123,11 @@ function Home() {
   const { address, isConnected } = useAccount()
   const [remainingGuesses, setRemainingGuesses] = useState(10)
 
-  // 检查钱包连接状态和剩余猜测次数
+  // Web3功能：检查钱包连接状态和剩余猜测次数
+  // 每个用户每天有10次猜测机会
   useEffect(() => {
     if (!isConnected) {
+      // 提示用户需要先连接钱包
       showErrorAlert('Please connect your wallet first', { persist: true })
       return
     }
@@ -139,9 +155,10 @@ function Home() {
       : false
   )
 
+  // 首次加载游戏时显示教程
   useEffect(() => {
-    // if no game state on load,
-    // show the user the how-to info modal
+    // 如果没有找到已保存的游戏状态
+    // 显示游戏说明模态框
     if (!loadGameStateFromLocalStorage()) {
       setTimeout(() => {
         setIsInfoModalOpen(true)
@@ -182,6 +199,7 @@ function Home() {
       setIsHardMode(isHard)
       localStorage.setItem('gameMode', isHard ? 'hard' : 'normal')
     } else {
+      // 提示用户只能在游戏开始时启用困难模式
       showErrorAlert(HARD_MODE_ALERT_MESSAGE)
     }
   }
@@ -189,6 +207,26 @@ function Home() {
   const handleHighContrastMode = (isHighContrast: boolean) => {
     setIsHighContrastMode(isHighContrast)
     setStoredIsHighContrastMode(isHighContrast)
+  }
+
+  // 处理移动到下一个单词的逻辑
+  const onNextWord = () => {
+    // 先关闭所有模态框
+    setIsWordDetailModalOpen(false)
+    setIsStatsModalOpen(false)
+    
+    // 延迟300ms后更新游戏状态
+    setTimeout(() => {
+      const newState = markCurrentWordAsCompleted()
+      const nextWord = newState.words[newState.currentWordIndex]
+      setSolution(nextWord)
+      setCurrentWordLength(nextWord.length)
+      setDailyProgress(getDailyProgress())
+      setGuesses([])
+      setIsGameWon(false)
+      setIsGameLost(false)
+      setCurrentGuess('')
+    }, 300)
   }
 
   const clearCurrentRowClass = () => {
@@ -200,6 +238,8 @@ function Home() {
   }, [guesses])
 
   useEffect(() => {
+    // 游戏胜利时的处理
+    // 处理游戏胜利状态
     if (isGameWon) {
       const winMessage =
         WIN_MESSAGES[Math.floor(Math.random() * WIN_MESSAGES.length)]
@@ -214,6 +254,7 @@ function Home() {
       })
     }
 
+    // 处理游戏失败状态
     if (isGameLost) {
       setTimeout(() => {
         setIsWordDetailModalOpen(true)
@@ -229,8 +270,9 @@ function Home() {
     }
     
     const remainingGuessesForWord = getRemainingGuessesForCurrentWord()
+    // 检查是否已用完当前单词的猜测次数
     if (remainingGuessesForWord <= 0) {
-      showErrorAlert('You have used all 6 guesses for this word')
+      showErrorAlert('You have used all 6 guesses for this word') // 提示已用完6次猜测机会
       return
     }
     
@@ -255,8 +297,9 @@ function Home() {
     }
     
     const remainingGuessesForWord = getRemainingGuessesForCurrentWord()
+    // 检查是否已用完当前单词的猜测次数
     if (remainingGuessesForWord <= 0) {
-      showErrorAlert('You have used all 6 guesses for this word')
+      showErrorAlert('You have used all 6 guesses for this word') // 提示已用完6次猜测机会
       return
     }
     
@@ -267,6 +310,7 @@ function Home() {
     const guessLength = unicodeLength(currentGuess)
     if (guessLength !== currentWordLength) {
       setCurrentRowClass('jiggle')
+      // 根据输入长度显示不同的错误提示：字母不足或超出长度限制
       const message = guessLength < currentWordLength ? NOT_ENOUGH_LETTERS_MESSAGE : `Word must be ${currentWordLength} letters long`
       return showErrorAlert(message, {
         onClose: clearCurrentRowClass,
@@ -283,9 +327,10 @@ function Home() {
 
     // enforce hard mode - all guesses must contain all previously revealed letters
     if (isHardMode) {
+      // 困难模式下检查是否使用了所有已揭示的字母
       const firstMissingReveal = findFirstUnusedReveal(currentGuess, guesses)
       if (firstMissingReveal) {
-        setCurrentRowClass('jiggle')
+        setCurrentRowClass('jiggle') // 添加抖动效果
         return showErrorAlert(firstMissingReveal, {
           onClose: clearCurrentRowClass,
         })
@@ -310,26 +355,13 @@ function Home() {
       setCurrentGuess('')
 
       if (winningWord) {
+        // 猜对了，增加猜测次数并更新统计
         incrementGuessesForCurrentWord()
         setStats(addStatsForCompletedGame(stats, guesses.length))
-        const newState = markCurrentWordAsCompleted()
-        const progress = getDailyProgress()
-        
-        if (progress.completed >= 10) {
-          // All words completed, show final stats
-          setIsGameWon(true)
-          setTimeout(() => {
-            setIsStatsModalOpen(true)
-          }, REVEAL_TIME_MS * solution.length + 1)
-        } else {
-          // Move to next word
-          const nextWord = newState.words[newState.currentWordIndex]
-          setSolution(nextWord)
-          setCurrentWordLength(nextWord.length)
-          setDailyProgress(progress)
-          setGuesses([])
-          setIsGameWon(false)
-        }
+        setIsGameWon(true)
+        return
+      } else if (guesses.length >= MAX_CHALLENGES) {
+        setIsGameLost(true)
         return
       }
 
@@ -388,6 +420,15 @@ function Home() {
             currentRowClassName={currentRowClass}
             wordLength={currentWordLength}
           />
+          {/* 将气泡提示放在 Grid 下、Keyboard 上 */}
+          {!isWordDetailModalOpen && (isGameWon || isGameLost) && (
+            <div
+              className="cursor-pointer text-center mt-4 text-red-500"
+              onClick={() => setIsWordDetailModalOpen(true)}
+            >
+              {CORRECT_WORD_MESSAGE(solutionText)}
+            </div>
+          )}
         </div>
         <Keyboard
           onChar={onChar}
@@ -440,14 +481,7 @@ function Home() {
           handleClose={() => setIsWordDetailModalOpen(false)}
           word={solution}
           showNext={isGameWon || isGameLost}
-          onNext={() => {
-            const nextWord = dailyState.words[dailyState.currentWordIndex]
-            setSolution(nextWord)
-            setCurrentWordLength(nextWord.length)
-            setDailyProgress(getDailyProgress())
-            setGuesses([])
-            setIsGameLost(false)
-          }}
+          onNext={onNextWord}
         />
       </div>
       </div>
