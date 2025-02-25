@@ -53,6 +53,7 @@ import { Navbar } from './components/navbar/Navbar'
 import { isInAppBrowser } from './lib/browser'
 import { MigrateStatsModal } from './components/modals/MigrateStatsModal'
 import { WordDetailModal } from './components/modals/WordDetailModal'
+import { ChatBubble } from './components/chat/ChatBubble'
 
 // Home组件：游戏的主要组件
 function Home() {
@@ -122,6 +123,8 @@ function Home() {
   const [stats, setStats] = useState(() => loadStats())
   const { address, isConnected } = useAccount()
   const [remainingGuesses, setRemainingGuesses] = useState(10)
+  const [aiMessage, setAiMessage] = useState('I am Worboo! I can help you narrow down the word choices. Try making a guess first!')
+  const [isAiThinking, setIsAiThinking] = useState(false)
 
   // Web3功能：检查钱包连接状态和剩余猜测次数
   // 每个用户每天有10次猜测机会
@@ -236,6 +239,11 @@ function Home() {
   useEffect(() => {
     saveGameStateToLocalStorage({ guesses, solution: solutionText })
   }, [guesses])
+
+  // 监听游戏状态变化，更新进度
+  useEffect(() => {
+    setDailyProgress(getDailyProgress())
+  }, [guesses, isGameWon, isGameLost])
 
   useEffect(() => {
     // 游戏胜利时的处理
@@ -412,14 +420,26 @@ function Home() {
           <div className="text-center mb-4 text-xl font-bold dark:text-white">
             The current word length is {currentWordLength}
           </div>
-          <Grid
-            solution={solutionText}
-            guesses={guesses}
-            currentGuess={currentGuess}
-            isRevealing={isRevealing}
-            currentRowClassName={currentRowClass}
-            wordLength={currentWordLength}
-          />
+          <div className="relative">
+            <Grid
+              solution={solutionText}
+              guesses={guesses}
+              currentGuess={currentGuess}
+              isRevealing={isRevealing}
+              currentRowClassName={currentRowClass}
+              wordLength={currentWordLength}
+            />
+            <div className="absolute left-[80%] top-1/2 -translate-y-1/2">
+              <ChatBubble message={aiMessage} isLoading={isAiThinking} />
+              <div className="mt-12 flex justify-center">
+                <img 
+                  src="/worboo/worboo-unruly.png" 
+                  alt="Worboo" 
+                  className="w-60 h-60 animate-bounce duration-[2000ms]" 
+                />
+              </div>
+            </div>
+          </div>
           {/* 将气泡提示放在 Grid 下、Keyboard 上 */}
           {!isWordDetailModalOpen && (isGameWon || isGameLost) && (
             <div
