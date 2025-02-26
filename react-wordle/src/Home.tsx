@@ -18,6 +18,7 @@ import {
   CORRECT_WORD_MESSAGE,
   HARD_MODE_ALERT_MESSAGE,
   DISCOURAGE_INAPP_BROWSER_TEXT,
+  WORBOO_CHAT_MESSAGES,
 } from './constants/strings'
 import {
   MAX_CHALLENGES,
@@ -123,7 +124,8 @@ function Home() {
   const [stats, setStats] = useState(() => loadStats())
   const { address, isConnected } = useAccount()
   const [remainingGuesses, setRemainingGuesses] = useState(10)
-  const [aiMessage, setAiMessage] = useState('I am Worboo! I can help you narrow down the word choices. Try making a guess first!')
+  const [aiMessage, setAiMessage] = useState(WORBOO_CHAT_MESSAGES[0])
+  const [aiMessageIndex, setAiMessageIndex] = useState(0)
   const [isAiThinking, setIsAiThinking] = useState(false)
 
   // Web3功能：检查钱包连接状态和剩余猜测次数
@@ -229,6 +231,9 @@ function Home() {
       setIsGameWon(false)
       setIsGameLost(false)
       setCurrentGuess('')
+      // Reset chat message to the first one
+      setAiMessageIndex(0)
+      setAiMessage(WORBOO_CHAT_MESSAGES[0])
     }, 300)
   }
 
@@ -361,6 +366,14 @@ function Home() {
     ) {
       setGuesses([...guesses, currentGuess])
       setCurrentGuess('')
+
+      setIsAiThinking(true)
+      setTimeout(() => {
+        const nextIndex = (aiMessageIndex + 1) % WORBOO_CHAT_MESSAGES.length
+        setAiMessageIndex(nextIndex)
+        setAiMessage(WORBOO_CHAT_MESSAGES[nextIndex])
+        setIsAiThinking(false)
+      }, REVEAL_TIME_MS * solution.length)
 
       if (winningWord) {
         // 猜对了，增加猜测次数并更新统计

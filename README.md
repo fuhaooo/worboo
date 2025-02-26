@@ -1,14 +1,5 @@
 # Worboo: ZK Wordle
 
-Zordle is [Wordle](https://www.nytimes.com/games/wordle/index.html), but with zero-knowledge proofs. Zordle uses ZK proofs to prove that a player knows words that map to their shared grid, but does not reveal those words to a verifier. Zordle is probably the first end-to-end web app built using [Halo 2](https://github.com/zcash/halo2/) ZK proofs!
-
-This project was made as part of [0xPARC Halo 2 Learning Group](https://0xparc.org/blog/halo2-learning-group). Big shoutout to [Ying Tong](https://twitter.com/therealyingtong) for basically hand-holding me through Halo2 circuit writing and to [Uma](https://twitter.com/pumatheuma) and [Blaine](https://twitter.com/BlaineBublitz) for significant work on porting the Halo 2 library to WASM.
-
-# [✨Demo: Live at zordle.xyz ✨](https://zordle.xyz/)
-
-https://user-images.githubusercontent.com/6984346/178832179-f9ae5ca5-e271-49b5-84ba-848fcd970b45.mov
-
-
 # Motivation and user flow
 
 Earlier this year, Wordle became one of the most popular word games, with millions logging on every day to attempt the day's Wordle and share their successes with friends and social media. Wordle's popularity was primarily driven by a really simple to share grid:
@@ -61,6 +52,11 @@ Zordle 项目由以下主要组件构成：
     - solution: 当天的单词
     - solutionIndex: 单词索引
     - tomorrow: 下一个游戏时间的时间戳
+
+## 6. worboo shop
+Worboo shop里，可以添加另一个大模块，是可以购买宝箱和钥匙，宝箱需要用EDU进行购买，用积分可以购买钥匙，进行开箱子，可以使用这里面的素材 @react-wordle/public/ treasure 。
+这个箱子有机会开出来游戏背景，棋盘素材，BGM，Worboo身上的配件，传奇Worboo形象等
+
 # Circuit
 
 The over-simplified mental model of Halo 2 I've come to appreciate is that of a giant spreadsheet: You have cells in a tabular format you can fill values in, mutate the values from cell to cell, and check that relationships and constraints you'd desire hold. Additionally, you have access to some "global" structures that are more powerful than just plain cell relationship comparators: you can check if row A is a permutation of row B for a very cheap cost, and its also very cheap to check set membership of the value of a particular cell in a giant list (as long as you can define said giant list at "compile time").

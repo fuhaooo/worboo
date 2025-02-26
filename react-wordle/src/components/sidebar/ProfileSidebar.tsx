@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Dialog, Transition, Disclosure } from '@headlessui/react'
 import {
   XIcon,
@@ -11,6 +11,14 @@ import {
   PlusIcon,
   ClipboardCopyIcon,
 } from '@heroicons/react/outline'
+import { FriendSearchModal } from '../modals/FriendSearchModal'
+import { FriendProfileCard } from '../friends/FriendProfileCard'
+import {
+  FRIEND_ADD_BUTTON,
+  FRIEND_LIST_TITLE,
+  FRIEND_PROFILE_CHALLENGE_BUTTON,
+  FRIEND_PROFILE_LEVEL,
+} from '../../constants/strings'
 
 type DisclosureRenderProps = {
   open: boolean
@@ -21,8 +29,57 @@ interface Props {
   setIsOpen: (isOpen: boolean) => void
 }
 
+type Friend = {
+  id: string
+  username: string
+  level: number
+  ocid: string
+  bio: string
+  avatar?: string
+  lastActive?: string
+}
+
 export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
   const contributionData = Array(365).fill(0).map(() => Math.floor(Math.random() * 4))
+  const [isFriendSearchOpen, setIsFriendSearchOpen] = useState(false)
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null)
+  const [friends, setFriends] = useState<Friend[]>([
+    {
+      id: '1',
+      username: 'Player 1',
+      level: 10,
+      ocid: '0x1234...5678',
+      bio: 'Learning English with Worboo! Let\'s make learning fun together.',
+      lastActive: 'Today'
+    },
+    {
+      id: '2',
+      username: 'Player 2',
+      level: 20,
+      ocid: '0x2345...6789',
+      bio: 'English enthusiast and Worboo lover!',
+      lastActive: 'Yesterday'
+    },
+    {
+      id: '3',
+      username: 'Player 3',
+      level: 30,
+      ocid: '0x3456...7890',
+      bio: 'On a journey to master English through Worboo.',
+      lastActive: '3 days ago'
+    },
+  ])
+  
+  const handleAddFriend = (newFriend: any) => {
+    setFriends([...friends, {
+      ...newFriend,
+      lastActive: 'Just now'
+    }])
+  }
+  
+  const openFriendProfile = (friend: Friend) => {
+    setSelectedFriend(friend)
+  }
   
   return (
     <Transition.Root show={isOpen} as={Fragment}>
@@ -84,12 +141,15 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                             </div>
                           </div>
                           <div className="pt-1">
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Player Name</h3>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">alfred.edu</h3>
                           </div>
                         </div>
-                        <button className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900">
+                        <button 
+                          className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium rounded-lg transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-900"
+                          onClick={() => setIsFriendSearchOpen(true)}
+                        >
                           <PlusIcon className="h-4 w-4 mr-1.5" />
-                          Add Friend
+                          {FRIEND_ADD_BUTTON}
                         </button>
                       </div>
 
@@ -108,7 +168,7 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                         </div>
 
                         <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                          Learning English with Worboo! Let's make learning fun and engaging together. ✨
+                          Learning English with Worboo! Let's make learning fun and engaging together. 
                         </p>
                       </div>
                     </div>
@@ -165,7 +225,7 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                               <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-left hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
                                 <div className="flex items-center space-x-3">
                                   <UsersIcon className="h-6 w-6 text-blue-500 dark:text-blue-400" />
-                                  <span className="font-medium text-blue-900 dark:text-blue-100">Friends List</span>
+                                  <span className="font-medium text-blue-900 dark:text-blue-100">{FRIEND_LIST_TITLE}</span>
                                 </div>
                                 <ChevronDownIcon
                                   className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-blue-500`}
@@ -173,17 +233,22 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                               </Disclosure.Button>
                               <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="space-y-3">
-                                  {[1,2,3].map((friend) => (
-                                    <div key={friend} className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-3">
-                                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                                  {friends.map((friend) => (
+                                    <div key={friend.id} className="flex items-center justify-between">
+                                      <div 
+                                        className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg w-full transition-colors"
+                                        onClick={() => openFriendProfile(friend)}
+                                      >
+                                        <div className="h-8 w-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
+                                          <span className="text-white font-bold">{friend.username.charAt(0)}</span>
+                                        </div>
                                         <div>
-                                          <div className="font-medium">Player {friend}</div>
-                                          <div className="text-xs text-gray-500 dark:text-gray-400">Level {friend * 10}</div>
+                                          <div className="font-medium">{friend.username}</div>
+                                          <div className="text-xs text-gray-500 dark:text-gray-400">{FRIEND_PROFILE_LEVEL} {friend.level}</div>
                                         </div>
                                       </div>
                                       <button className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
-                                        Challenge
+                                        {FRIEND_PROFILE_CHALLENGE_BUTTON}
                                       </button>
                                     </div>
                                   ))}
@@ -258,7 +323,7 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                               <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-orange-50 dark:bg-orange-900/20 px-4 py-3 text-left hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
                                 <div className="flex items-center space-x-3">
                                   <BookOpenIcon className="h-6 w-6 text-orange-500 dark:text-orange-400" />
-                                  <span className="font-medium text-orange-900 dark:text-orange-100">NFT Story</span>
+                                  <span className="font-medium text-orange-900 dark:text-orange-100">NFT Season</span>
                                 </div>
                                 <ChevronDownIcon
                                   className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-orange-500`}
@@ -266,14 +331,14 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                               </Disclosure.Button>
                               <Disclosure.Panel className="px-4 pt-4 pb-2 text-sm text-gray-600 dark:text-gray-300">
                                 <div className="space-y-4">
-                                  {[1,2].map((chapter) => (
-                                    <div key={chapter} className="space-y-2">
-                                      <h4 className="font-medium text-base">Chapter {chapter}</h4>
+                                  {[1,2].map((season) => (
+                                    <div key={season} className="space-y-2">
+                                      <h4 className="font-medium text-base">Season {season}</h4>
                                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {chapter === 1 ? 'The beginning of your Worboo journey...' : 'More adventures await...'}
+                                        {season === 1 ? 'The beginning of your Worboo journey...' : 'More adventures await...'}
                                       </p>
                                       <div className="h-24 rounded-lg bg-gradient-to-r from-orange-500 to-pink-500 flex items-center justify-center text-white font-medium">
-                                        {chapter === 1 ? 'Unlocked' : 'Locked'}
+                                        {season === 1 ? 'Unlocked' : 'Locked'}
                                       </div>
                                     </div>
                                   ))}
@@ -291,6 +356,22 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
           </div>
         </div>
       </Dialog>
+      
+      {/* Friend Search Modal */}
+      <FriendSearchModal 
+        isOpen={isFriendSearchOpen}
+        handleClose={() => setIsFriendSearchOpen(false)}
+        onAddFriend={handleAddFriend}
+      />
+      
+      {/* Friend Profile Card */}
+      {selectedFriend && (
+        <FriendProfileCard
+          friend={selectedFriend}
+          isOpen={!!selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+        />
+      )}
     </Transition.Root>
   )
 }

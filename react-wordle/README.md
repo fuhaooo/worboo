@@ -94,6 +94,33 @@ To enable Plausible Analytics:
 - Create a new website with Plausible Analytics with a given domain, e.g. `example.app`
 - In [.env](.env), add `REACT_APP_PLAUSIBLE_DOMAIN=example.app`
 
+## Recent Updates
+
+### Friend System Enhancement (2025-02-26)
+
+#### New Features:
+- **Friend Search**: Users can now search for friends using their OCID through a new modal interface
+  - Click the "Add Friend" button in the Profile sidebar to open the search dialog
+  - Enter an OCID to find and add new friends
+  - View detailed profile information before adding a friend
+
+- **Friend Profile Cards**: Enhanced Friend List with detailed profile cards
+  - Click on any friend in your Friend List to view their detailed profile
+  - Profile cards display the friend's Worboo avatar, level, OCID, and bio
+  - Quick actions available: Message friend and Send Gift
+
+#### Product Design Considerations:
+- **User Experience Flow**: The friend search and profile viewing process is designed to be intuitive and seamless
+- **Visual Consistency**: Friend cards maintain the same visual language as the rest of the Worboo interface
+- **Progressive Disclosure**: Information is presented in a layered approach, showing basic details in the list and more comprehensive information in the profile card
+- **Accessibility**: All interactive elements have appropriate focus states and semantic HTML
+
+#### Future Enhancements (Planned):
+- Friend request approval system
+- Friend activity feed
+- Collaborative learning features between friends
+- Friend recommendations based on learning progress and interests
+
 ## Projects built using this repo
 
 ### Other languages
