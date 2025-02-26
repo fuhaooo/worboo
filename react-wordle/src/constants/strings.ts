@@ -322,7 +322,7 @@ export const SHOP_TREASURE_ITEMS: ShopItem[] = [
     name: 'Wooden Key',
     description: 'Used to open Wooden Chests. May reveal common game backgrounds, board themes, or Worboo accessories.',
     price: 100,
-    image: '/treasure/wooden key.png',
+    image: '/treasure/wooden_key.png',
     rarity: RARITY.COMMON,
     currency: 'Score'
   },
@@ -331,7 +331,7 @@ export const SHOP_TREASURE_ITEMS: ShopItem[] = [
     name: 'Silver Key',
     description: 'Used to open Silver Chests. May reveal rare game backgrounds, board themes, BGM, or Worboo accessories.',
     price: 250,
-    image: '/treasure/silver key.png',
+    image: '/treasure/silver_key.png',
     rarity: RARITY.RARE,
     currency: 'Score'
   },
@@ -340,7 +340,7 @@ export const SHOP_TREASURE_ITEMS: ShopItem[] = [
     name: 'Golden Key',
     description: 'Used to open Diamond Chests. May reveal legendary game backgrounds, board themes, BGM, or Worboo NFTs.',
     price: 500,
-    image: '/treasure/golden key.png',
+    image: '/treasure/golden_key.png',
     rarity: RARITY.LEGENDARY,
     currency: 'Score'
   },
