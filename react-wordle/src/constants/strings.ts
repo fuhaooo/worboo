@@ -70,37 +70,57 @@ export const FRIEND_PROFILE_COPIED_OCID = 'Copied!'
 
 // Shop constants
 export const SHOP_TITLE = 'Worboo Shop'
+export const SHOP_SUBTITLE = 'Customize your Worboo with unique items!'
 export const SHOP_BUY_BUTTON = 'Buy'
 export const SHOP_EQUIP_BUTTON = 'Equip'
 export const SHOP_UNEQUIP_BUTTON = 'Unequip'
 export const SHOP_EQUIPPED_LABEL = 'Equipped'
-export const SHOP_TABS = {
-  FULL_WORBOO: 'Full Worboo',
-  BODY: 'Body',
-  HEAD: 'Head',
-  EYES: 'Eyes',
-  MOUTH: 'Mouth',
-  ACCESSORIES: 'Accessories'
+export const SHOP_OPEN_BUTTON = 'Open'
+
+export const SHOP_TABS = [
+  'Full Worboo',
+  'Body',
+  'Head',
+  'Eyes',
+  'Mouth',
+  'Accessories',
+  'Treasure',
+]
+
+// Define shop item type
+export interface ShopItem {
+  id: string
+  name: string
+  price: number
+  image: string
+  description: string
+  rarity: {
+    id: string
+    name: string
+    color: string
+  }
+  currency?: string
 }
 
 // Rarity levels
 export const RARITY = {
-  COMMON: { name: 'Common', color: 'gray' },
-  UNCOMMON: { name: 'Uncommon', color: 'green' },
-  RARE: { name: 'Rare', color: 'blue' },
-  EPIC: { name: 'Epic', color: 'purple' },
-  LEGENDARY: { name: 'Legendary', color: 'orange' }
+  COMMON: { id: 'common', name: 'Common', color: 'gray' },
+  UNCOMMON: { id: 'uncommon', name: 'Uncommon', color: 'green' },
+  RARE: { id: 'rare', name: 'Rare', color: 'blue' },
+  EPIC: { id: 'epic', name: 'Epic', color: 'purple' },
+  LEGENDARY: { id: 'legendary', name: 'Legendary', color: 'orange' }
 }
 
 // Full Worboo NFTs
-export const SHOP_FULL_WORBOO_ITEMS = [
+export const SHOP_FULL_WORBOO_ITEMS: ShopItem[] = [
   {
     id: 'worboo-default',
     name: 'Classic Worboo',
     price: 100,
     image: '/worboo/worboo.png',
     description: 'The original Worboo character',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'worboo-sunglass',
@@ -108,7 +128,8 @@ export const SHOP_FULL_WORBOO_ITEMS = [
     price: 150,
     image: '/worboo/worboo-sunglass.png',
     description: 'Worboo with stylish sunglasses',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   },
   {
     id: 'worboo-unruly',
@@ -116,7 +137,8 @@ export const SHOP_FULL_WORBOO_ITEMS = [
     price: 150,
     image: '/worboo/worboo-unruly.png',
     description: 'Worboo with a wild attitude',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   },
   {
     id: 'worboo-like',
@@ -124,7 +146,8 @@ export const SHOP_FULL_WORBOO_ITEMS = [
     price: 200,
     image: '/worboo/worboo-like.png',
     description: 'Worboo giving a thumbs up',
-    rarity: RARITY.RARE
+    rarity: RARITY.RARE,
+    currency: 'EDU'
   },
   {
     id: 'worboo-pig',
@@ -132,7 +155,8 @@ export const SHOP_FULL_WORBOO_ITEMS = [
     price: 250,
     image: '/worboo/worboo-pig.png',
     description: 'Worboo in pig costume',
-    rarity: RARITY.EPIC
+    rarity: RARITY.EPIC,
+    currency: 'EDU'
   },
   {
     id: 'worboo-redpepper',
@@ -140,19 +164,21 @@ export const SHOP_FULL_WORBOO_ITEMS = [
     price: 250,
     image: '/worboo/worboo-redpepper.png',
     description: 'Worboo with a hot pepper',
-    rarity: RARITY.EPIC
+    rarity: RARITY.EPIC,
+    currency: 'EDU'
   }
 ]
 
 // Body parts NFTs
-export const SHOP_BODY_ITEMS = [
+export const SHOP_BODY_ITEMS: ShopItem[] = [
   {
     id: 'body-default',
     name: 'Classic Body',
     price: 50,
     image: '/worboo/worboo.png',
     description: 'The original Worboo body',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'body-blue',
@@ -160,7 +186,8 @@ export const SHOP_BODY_ITEMS = [
     price: 80,
     image: '/worboo/worboo-like.png',
     description: 'A cool blue Worboo body',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   },
   {
     id: 'body-pig',
@@ -168,19 +195,21 @@ export const SHOP_BODY_ITEMS = [
     price: 120,
     image: '/worboo/worboo-pig.png',
     description: 'Adorable pig-themed body',
-    rarity: RARITY.RARE
+    rarity: RARITY.RARE,
+    currency: 'EDU'
   }
 ]
 
 // Head parts NFTs
-export const SHOP_HEAD_ITEMS = [
+export const SHOP_HEAD_ITEMS: ShopItem[] = [
   {
     id: 'head-default',
     name: 'Classic Head',
     price: 50,
     image: '/worboo/worboo.png',
     description: 'The original Worboo head',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'head-unruly',
@@ -188,19 +217,21 @@ export const SHOP_HEAD_ITEMS = [
     price: 75,
     image: '/worboo/worboo-unruly.png',
     description: 'A head with wild hair',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   }
 ]
 
 // Eye parts NFTs
-export const SHOP_EYE_ITEMS = [
+export const SHOP_EYE_ITEMS: ShopItem[] = [
   {
     id: 'eyes-default',
     name: 'Classic Eyes',
     price: 30,
     image: '/worboo/worboo.png',
     description: 'The original Worboo eyes',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'eyes-sunglass',
@@ -208,19 +239,21 @@ export const SHOP_EYE_ITEMS = [
     price: 60,
     image: '/worboo/worboo-sunglass.png',
     description: 'Cool sunglasses for your Worboo',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   }
 ]
 
 // Mouth parts NFTs
-export const SHOP_MOUTH_ITEMS = [
+export const SHOP_MOUTH_ITEMS: ShopItem[] = [
   {
     id: 'mouth-default',
     name: 'Classic Mouth',
     price: 30,
     image: '/worboo/worboo.png',
     description: 'The original Worboo mouth',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'mouth-pepper',
@@ -228,19 +261,21 @@ export const SHOP_MOUTH_ITEMS = [
     price: 70,
     image: '/worboo/worboo-redpepper.png',
     description: 'A mouth with a hot pepper',
-    rarity: RARITY.RARE
+    rarity: RARITY.RARE,
+    currency: 'EDU'
   }
 ]
 
 // Accessories NFTs
-export const SHOP_ACCESSORY_ITEMS = [
+export const SHOP_ACCESSORY_ITEMS: ShopItem[] = [
   {
     id: 'accessory-none',
     name: 'No Accessory',
     price: 0,
     image: '/worboo/worboo.png',
     description: 'No accessories',
-    rarity: RARITY.COMMON
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
   },
   {
     id: 'accessory-thumbsup',
@@ -248,16 +283,85 @@ export const SHOP_ACCESSORY_ITEMS = [
     price: 40,
     image: '/worboo/worboo-like.png',
     description: 'A friendly thumbs up gesture',
-    rarity: RARITY.UNCOMMON
+    rarity: RARITY.UNCOMMON,
+    currency: 'EDU'
   }
 ]
 
+// Treasure shop items
+export const SHOP_TREASURE_ITEMS: ShopItem[] = [
+  {
+    id: 'wooden_chest',
+    name: 'Wooden Chest',
+    description: 'A basic chest that may contain common items. Requires a wooden key to open.',
+    price: 50,
+    image: '/treasure/wooden.png',
+    rarity: RARITY.COMMON,
+    currency: 'EDU'
+  },
+  {
+    id: 'silver_chest',
+    name: 'Silver Chest',
+    description: 'A valuable chest that may contain rare items. Requires a silver key to open.',
+    price: 150,
+    image: '/treasure/silver.png',
+    rarity: RARITY.RARE,
+    currency: 'EDU'
+  },
+  {
+    id: 'diamond_chest',
+    name: 'Diamond Chest',
+    description: 'A premium chest that may contain legendary items. Requires a golden key to open.',
+    price: 300,
+    image: '/treasure/diamond.png',
+    rarity: RARITY.LEGENDARY,
+    currency: 'EDU'
+  },
+  {
+    id: 'wooden_key',
+    name: 'Wooden Key',
+    description: 'Used to open Wooden Chests. May reveal common game backgrounds, board themes, or Worboo accessories.',
+    price: 100,
+    image: '/treasure/wooden key.png',
+    rarity: RARITY.COMMON,
+    currency: 'Score'
+  },
+  {
+    id: 'silver_key',
+    name: 'Silver Key',
+    description: 'Used to open Silver Chests. May reveal rare game backgrounds, board themes, BGM, or Worboo accessories.',
+    price: 250,
+    image: '/treasure/silver key.png',
+    rarity: RARITY.RARE,
+    currency: 'Score'
+  },
+  {
+    id: 'golden_key',
+    name: 'Golden Key',
+    description: 'Used to open Diamond Chests. May reveal legendary game backgrounds, board themes, BGM, or Worboo NFTs.',
+    price: 500,
+    image: '/treasure/golden key.png',
+    rarity: RARITY.LEGENDARY,
+    currency: 'Score'
+  },
+]
+
+// Possible treasure rewards
+export const TREASURE_REWARDS = {
+  BACKGROUND: 'Game Background',
+  BOARD_THEME: 'Board Theme',
+  BGM: 'Background Music',
+  WORBOO_ACCESSORY: 'Worboo Accessory',
+  WORBOO_NFT: 'Legendary Worboo',
+}
+
 // All shop items combined for convenience
-export const SHOP_ITEMS = [
+export const SHOP_ITEMS: ShopItem[] = [
   ...SHOP_FULL_WORBOO_ITEMS,
   ...SHOP_BODY_ITEMS,
   ...SHOP_HEAD_ITEMS,
   ...SHOP_EYE_ITEMS,
   ...SHOP_MOUTH_ITEMS,
-  ...SHOP_ACCESSORY_ITEMS
+  ...SHOP_ACCESSORY_ITEMS,
+  ...SHOP_TREASURE_ITEMS
 ]

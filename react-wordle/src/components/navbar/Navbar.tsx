@@ -4,8 +4,11 @@ import {
   ChartBarIcon,
   CogIcon,
   InformationCircleIcon,
-  UserCircleIcon,
+  QuestionMarkCircleIcon,
   ShoppingBagIcon,
+  UserGroupIcon,
+  GiftIcon,
+  UserCircleIcon,
   XIcon,
 } from '@heroicons/react/outline'
 import {
@@ -13,22 +16,27 @@ import {
   DISCORD_URL,
   TELEGRAM_URL,
   SHOP_TITLE,
-  SHOP_BUY_BUTTON,
-  SHOP_EQUIP_BUTTON,
-  SHOP_UNEQUIP_BUTTON,
-  SHOP_EQUIPPED_LABEL,
   SHOP_TABS,
-  SHOP_ITEMS,
   SHOP_FULL_WORBOO_ITEMS,
   SHOP_BODY_ITEMS,
   SHOP_HEAD_ITEMS,
   SHOP_EYE_ITEMS,
   SHOP_MOUTH_ITEMS,
   SHOP_ACCESSORY_ITEMS,
-  RARITY
+  SHOP_TREASURE_ITEMS,
+  SHOP_ITEMS,
+  SHOP_EQUIP_BUTTON,
+  SHOP_UNEQUIP_BUTTON,
+  SHOP_EQUIPPED_LABEL,
+  SHOP_BUY_BUTTON,
+  SHOP_OPEN_BUTTON,
+  SHOP_SUBTITLE,
+  RARITY,
+  ShopItem
 } from '../../constants/strings'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
 import { ProfileSidebar } from '../sidebar/ProfileSidebar'
+import { useAccount } from 'wagmi'
 
 type Props = {
   setIsInfoModalOpen: (value: boolean) => void
@@ -51,31 +59,49 @@ export const Navbar = ({
   const [isShopModalOpen, setIsShopModalOpen] = useState(false)
   const [selectedWorboo, setSelectedWorboo] = useState<string | null>(null)
   const [equippedWorboo, setEquippedWorboo] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState(SHOP_TABS.FULL_WORBOO)
-  const [equippedItems, setEquippedItems] = useState({
-    fullWorboo: null as string | null,
-    body: null as string | null,
-    head: null as string | null,
-    eyes: null as string | null,
-    mouth: null as string | null,
-    accessory: null as string | null
+  const [activeTab, setActiveTab] = useState(SHOP_TABS[0])
+  const [equippedItems, setEquippedItems] = useState<Record<string, string>>({
+    [SHOP_TABS[0]]: '',
+    [SHOP_TABS[1]]: '',
+    [SHOP_TABS[2]]: '',
+    [SHOP_TABS[3]]: '',
+    [SHOP_TABS[4]]: '',
+    [SHOP_TABS[5]]: '',
   })
+  const [inventory, setInventory] = useState<Record<string, boolean>>({})
+  // For treasure items
+  const [ownedChests, setOwnedChests] = useState<Record<string, number>>({
+    wooden_chest: 0,
+    silver_chest: 0,
+    diamond_chest: 0,
+  })
+  const [ownedKeys, setOwnedKeys] = useState<Record<string, number>>({
+    wooden_key: 0,
+    silver_key: 0,
+    golden_key: 0,
+  })
+  const [eduBalance, setEduBalance] = useState(500) // Mock EDU balance
+  const [scoreBalance, setScoreBalance] = useState(1000) // Mock score balance
+  const [openingChest, setOpeningChest] = useState<string | null>(null)
+  const [rewardMessage, setRewardMessage] = useState<string | null>(null)
 
   // Get current items based on active tab
-  const getCurrentItems = () => {
+  const getCurrentItems = (): ShopItem[] => {
     switch (activeTab) {
-      case SHOP_TABS.FULL_WORBOO:
+      case SHOP_TABS[0]:
         return SHOP_FULL_WORBOO_ITEMS
-      case SHOP_TABS.BODY:
+      case SHOP_TABS[1]:
         return SHOP_BODY_ITEMS
-      case SHOP_TABS.HEAD:
+      case SHOP_TABS[2]:
         return SHOP_HEAD_ITEMS
-      case SHOP_TABS.EYES:
+      case SHOP_TABS[3]:
         return SHOP_EYE_ITEMS
-      case SHOP_TABS.MOUTH:
+      case SHOP_TABS[4]:
         return SHOP_MOUTH_ITEMS
-      case SHOP_TABS.ACCESSORIES:
+      case SHOP_TABS[5]:
         return SHOP_ACCESSORY_ITEMS
+      case SHOP_TABS[6]:
+        return SHOP_TREASURE_ITEMS
       default:
         return SHOP_FULL_WORBOO_ITEMS
     }
@@ -83,22 +109,7 @@ export const Navbar = ({
 
   // Get equipped item for current tab
   const getEquippedForCurrentTab = () => {
-    switch (activeTab) {
-      case SHOP_TABS.FULL_WORBOO:
-        return equippedItems.fullWorboo
-      case SHOP_TABS.BODY:
-        return equippedItems.body
-      case SHOP_TABS.HEAD:
-        return equippedItems.head
-      case SHOP_TABS.EYES:
-        return equippedItems.eyes
-      case SHOP_TABS.MOUTH:
-        return equippedItems.mouth
-      case SHOP_TABS.ACCESSORIES:
-        return equippedItems.accessory
-      default:
-        return null
-    }
+    return equippedItems[activeTab] || ''
   }
 
   // Set equipped item for current tab
@@ -106,23 +117,23 @@ export const Navbar = ({
     const newEquippedItems = { ...equippedItems }
     
     switch (activeTab) {
-      case SHOP_TABS.FULL_WORBOO:
-        newEquippedItems.fullWorboo = itemId
+      case SHOP_TABS[0]:
+        newEquippedItems[SHOP_TABS[0]] = itemId || ''
         break
-      case SHOP_TABS.BODY:
-        newEquippedItems.body = itemId
+      case SHOP_TABS[1]:
+        newEquippedItems[SHOP_TABS[1]] = itemId || ''
         break
-      case SHOP_TABS.HEAD:
-        newEquippedItems.head = itemId
+      case SHOP_TABS[2]:
+        newEquippedItems[SHOP_TABS[2]] = itemId || ''
         break
-      case SHOP_TABS.EYES:
-        newEquippedItems.eyes = itemId
+      case SHOP_TABS[3]:
+        newEquippedItems[SHOP_TABS[3]] = itemId || ''
         break
-      case SHOP_TABS.MOUTH:
-        newEquippedItems.mouth = itemId
+      case SHOP_TABS[4]:
+        newEquippedItems[SHOP_TABS[4]] = itemId || ''
         break
-      case SHOP_TABS.ACCESSORIES:
-        newEquippedItems.accessory = itemId
+      case SHOP_TABS[5]:
+        newEquippedItems[SHOP_TABS[5]] = itemId || ''
         break
     }
     
@@ -147,24 +158,139 @@ export const Navbar = ({
     }
   }
 
+  // Handle buy item
+  const handleBuyItem = (item: ShopItem) => {
+    // Mock purchase functionality
+    setInventory((prev) => ({
+      ...prev,
+      [item.id]: true,
+    }))
+  }
+
+  // Handle buy treasure item
+  const handleBuyTreasureItem = (item: ShopItem) => {
+    if (item.id.includes('chest')) {
+      // Buy chest with EDU
+      if (eduBalance >= item.price) {
+        setEduBalance(eduBalance - item.price)
+        setOwnedChests({
+          ...ownedChests,
+          [item.id]: (ownedChests[item.id as keyof typeof ownedChests] || 0) + 1,
+        })
+      } else {
+        alert('Not enough EDU to purchase this chest!')
+      }
+    } else if (item.id.includes('key')) {
+      // Buy key with Score
+      if (scoreBalance >= item.price) {
+        setScoreBalance(scoreBalance - item.price)
+        setOwnedKeys({
+          ...ownedKeys,
+          [item.id]: (ownedKeys[item.id as keyof typeof ownedKeys] || 0) + 1,
+        })
+      } else {
+        alert('Not enough Score to purchase this key!')
+      }
+    }
+  }
+
+  // Handle open chest
+  const handleOpenChest = (chestId: string) => {
+    const keyMap: Record<string, string> = {
+      wooden_chest: 'wooden_key',
+      silver_chest: 'silver_key',
+      diamond_chest: 'golden_key',
+    }
+    
+    const requiredKey = keyMap[chestId]
+    
+    if (ownedKeys[requiredKey as keyof typeof ownedKeys] > 0) {
+      setOpeningChest(chestId)
+      
+      // Simulate opening animation
+      setTimeout(() => {
+        // Generate random reward
+        const rewards = [
+          'Game Background',
+          'Board Theme',
+          'Background Music',
+          'Worboo Accessory',
+        ]
+        
+        // Add legendary Worboo NFT as a possible reward for diamond chest
+        if (chestId === 'diamond_chest') {
+          rewards.push('Legendary Worboo NFT')
+        }
+        
+        const randomReward = rewards[Math.floor(Math.random() * rewards.length)]
+        setRewardMessage(`Congratulations! You received a ${randomReward}!`)
+        
+        // Update inventory
+        setOwnedChests({
+          ...ownedChests,
+          [chestId]: ownedChests[chestId as keyof typeof ownedChests] - 1,
+        })
+        
+        setOwnedKeys({
+          ...ownedKeys,
+          [requiredKey]: ownedKeys[requiredKey as keyof typeof ownedKeys] - 1,
+        })
+        
+        // Reset opening state after showing reward
+        setTimeout(() => {
+          setOpeningChest(null)
+          
+          // Reset reward message after a delay
+          setTimeout(() => {
+            setRewardMessage(null)
+          }, 3000)
+        }, 1500)
+      }, 1000)
+    } else {
+      alert(`You need a ${requiredKey.replace('_', ' ')} to open this chest!`)
+    }
+  }
+
+  // Handle equip/unequip item
+  const handleEquipItem = (itemId: string) => {
+    setEquippedItems((prev) => ({
+      ...prev,
+      [activeTab]: prev[activeTab] === itemId ? '' : itemId,
+    }))
+  }
+
+  const { isConnected } = useAccount()
+
   return (
     <div className="navbar">
       <div className="navbar-content px-5">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              aria-label="Open profile"
-            >
-              <UserCircleIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
-            </button>
+            {isConnected && (
+              <button
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Open profile"
+              >
+                <UserCircleIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
             <button
               onClick={() => setIsShopModalOpen(true)}
               className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Open shop"
             >
               <ShoppingBagIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab(SHOP_TABS[6])
+                setIsShopModalOpen(true)
+              }}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Open treasure chest"
+            >
+              <GiftIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
             </button>
           </div>
           <InformationCircleIcon
@@ -225,7 +351,7 @@ export const Navbar = ({
         </div>
       </div>
       <hr></hr>
-      <ProfileSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <ProfileSidebar isOpen={isSidebarOpen && isConnected} setIsOpen={setIsSidebarOpen} />
       
       {/* Shop Modal */}
       <Transition.Root show={isShopModalOpen} as={Fragment}>
@@ -260,29 +386,26 @@ export const Navbar = ({
                         {SHOP_TITLE}
                       </Dialog.Title>
                       <button
-                        type="button"
-                        className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                        className="rounded-md bg-white dark:bg-gray-800 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                         onClick={() => setIsShopModalOpen(false)}
                       >
+                        <span className="sr-only">Close</span>
                         <XIcon className="h-6 w-6" aria-hidden="true" />
                       </button>
                     </div>
                     
                     {/* Shop Tabs */}
-                    <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-                      <nav className="-mb-px flex space-x-4 overflow-x-auto">
-                        {Object.values(SHOP_TABS).map((tab) => (
+                    <div className="border-b border-gray-200 dark:border-gray-700">
+                      <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
+                        {SHOP_TABS.map((tab) => (
                           <button
                             key={tab}
-                            onClick={() => {
-                              setActiveTab(tab)
-                              setSelectedWorboo(null)
-                            }}
-                            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                            onClick={() => setActiveTab(tab)}
+                            className={`${
                               activeTab === tab
-                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                            }`}
+                            } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
                           >
                             {tab}
                           </button>
@@ -290,16 +413,34 @@ export const Navbar = ({
                       </nav>
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {/* Balances - Only shown for Treasure tab and when wallet is connected */}
+                    {activeTab === SHOP_TABS[6] && isConnected && (
+                      <div className="flex justify-between mt-4 mb-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <div className="flex items-center">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">EDU Balance:</span>
+                          <span className="ml-2 text-blue-600 dark:text-blue-400 font-bold">{eduBalance}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">Score Balance:</span>
+                          <span className="ml-2 text-green-600 dark:text-green-400 font-bold">{scoreBalance}</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Reward Message */}
+                    {rewardMessage && (
+                      <div className="mt-4 p-4 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-lg text-center animate-pulse">
+                        {rewardMessage}
+                      </div>
+                    )}
+                    
+                    {/* Items Grid */}
+                    <div className="mt-6 grid grid-cols-1 gap-y-10 gap-x-6 sm:grid-cols-2 lg:grid-cols-3 xl:gap-x-8">
                       {getCurrentItems().map((item) => (
-                        <div 
-                          key={item.id} 
-                          className={`group relative cursor-pointer ${selectedWorboo === item.id ? 'ring-4 ring-blue-500 rounded-lg' : ''}`}
-                          onClick={() => setSelectedWorboo(item.id)}
-                        >
-                          <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-800">
-                            <img 
-                              src={item.image} 
+                        <div key={item.id} className="group relative">
+                          <div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 relative">
+                            <img
+                              src={item.image}
                               alt={item.name}
                               className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
                             />
@@ -307,9 +448,20 @@ export const Navbar = ({
                             <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium ${getRarityColorClass(item.rarity)}`}>
                               {item.rarity.name}
                             </div>
-                            {getEquippedForCurrentTab() === item.id && (
+                            {activeTab !== SHOP_TABS[6] && getEquippedForCurrentTab() === item.id && (
                               <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                                 {SHOP_EQUIPPED_LABEL}
+                              </div>
+                            )}
+                            {/* Owned count for treasure items */}
+                            {activeTab === SHOP_TABS[6] && item.id.includes('chest') && ownedChests[item.id as keyof typeof ownedChests] > 0 && (
+                              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                Owned: {ownedChests[item.id as keyof typeof ownedChests]}
+                              </div>
+                            )}
+                            {activeTab === SHOP_TABS[6] && item.id.includes('key') && ownedKeys[item.id as keyof typeof ownedKeys] > 0 && (
+                              <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                Owned: {ownedKeys[item.id as keyof typeof ownedKeys]}
                               </div>
                             )}
                           </div>
@@ -318,26 +470,65 @@ export const Navbar = ({
                               <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {item.name}
                               </h3>
-                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{item.price} coins</p>
+                              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                {item.description}
+                              </p>
                             </div>
-                            <button 
-                              className={`inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded ${
-                                getEquippedForCurrentTab() === item.id 
-                                  ? 'text-gray-700 bg-gray-200 dark:text-gray-300 dark:bg-gray-700' 
-                                  : 'text-white bg-blue-600 hover:bg-blue-700'
-                              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (getEquippedForCurrentTab() === item.id) {
-                                  setEquippedForCurrentTab(null);
-                                } else {
-                                  setEquippedForCurrentTab(item.id);
-                                  // In a real app, this would save to user profile
-                                }
-                              }}
-                            >
-                              {getEquippedForCurrentTab() === item.id ? SHOP_UNEQUIP_BUTTON : SHOP_BUY_BUTTON}
-                            </button>
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {item.price} {item.currency || 'EDU'}
+                            </p>
+                          </div>
+                          <div className="mt-4">
+                            {activeTab !== SHOP_TABS[6] ? (
+                              <button
+                                onClick={() => handleEquipItem(item.id)}
+                                className={`${
+                                  getEquippedForCurrentTab() === item.id
+                                    ? 'bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800'
+                                    : 'bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800'
+                                } w-full flex items-center justify-center rounded-md border border-transparent py-2 px-8 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+                              >
+                                {getEquippedForCurrentTab() === item.id
+                                  ? SHOP_UNEQUIP_BUTTON
+                                  : SHOP_EQUIP_BUTTON}
+                              </button>
+                            ) : (
+                              // Treasure tab buttons
+                              <div>
+                                {item.id.includes('chest') ? (
+                                  <div className="flex flex-col space-y-2">
+                                    <button
+                                      onClick={() => handleBuyTreasureItem(item)}
+                                      className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                      disabled={openingChest !== null || !isConnected}
+                                    >
+                                      {SHOP_BUY_BUTTON}
+                                    </button>
+                                    {ownedChests[item.id as keyof typeof ownedChests] > 0 && (
+                                      <button
+                                        onClick={() => handleOpenChest(item.id)}
+                                        className={`w-full ${
+                                          openingChest === item.id
+                                            ? 'bg-yellow-500 animate-pulse'
+                                            : 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800'
+                                        } rounded-md border border-transparent py-2 px-4 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2`}
+                                        disabled={openingChest !== null}
+                                      >
+                                        {openingChest === item.id ? 'Opening...' : SHOP_OPEN_BUTTON}
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => handleBuyTreasureItem(item)}
+                                    className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 rounded-md border border-transparent py-2 px-8 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                                    disabled={openingChest !== null || !isConnected}
+                                  >
+                                    {SHOP_BUY_BUTTON}
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -346,7 +537,8 @@ export const Navbar = ({
                     {selectedWorboo && (
                       <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                         {(() => {
-                          const item = SHOP_ITEMS.find(item => item.id === selectedWorboo);
+                          // Combine all shop items for selection
+                          const item = SHOP_ITEMS.find((item) => item.id === selectedWorboo);
                           if (!item) return null;
                           
                           return (
@@ -371,7 +563,7 @@ export const Navbar = ({
                                   } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                                   onClick={() => {
                                     if (getEquippedForCurrentTab() === selectedWorboo) {
-                                      setEquippedForCurrentTab(null);
+                                      setEquippedForCurrentTab('');
                                     } else {
                                       setEquippedForCurrentTab(selectedWorboo);
                                     }
@@ -388,7 +580,7 @@ export const Navbar = ({
                     )}
                     
                     {/* Worboo Preview - Only show when modular parts are equipped */}
-                    {(equippedItems.body || equippedItems.head || equippedItems.eyes || equippedItems.mouth || equippedItems.accessory) && !equippedItems.fullWorboo && (
+                    {(equippedItems[SHOP_TABS[1]] || equippedItems[SHOP_TABS[2]] || equippedItems[SHOP_TABS[3]] || equippedItems[SHOP_TABS[4]] || equippedItems[SHOP_TABS[5]]) && !equippedItems[SHOP_TABS[0]] && (
                       <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                         <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
                           Your Custom Worboo
@@ -397,37 +589,37 @@ export const Navbar = ({
                           <div className="relative h-40 w-40">
                             {/* This would be a composite image in a real implementation */}
                             {/* For now we'll just show the most recently equipped part */}
-                            {equippedItems.body && (
+                            {equippedItems[SHOP_TABS[1]] && (
                               <img 
-                                src={SHOP_BODY_ITEMS.find(item => item.id === equippedItems.body)?.image} 
+                                src={SHOP_BODY_ITEMS.find(item => item.id === equippedItems[SHOP_TABS[1]])?.image} 
                                 alt="Body" 
                                 className="absolute inset-0 h-full w-full object-contain"
                               />
                             )}
-                            {equippedItems.head && (
+                            {equippedItems[SHOP_TABS[2]] && (
                               <img 
-                                src={SHOP_HEAD_ITEMS.find(item => item.id === equippedItems.head)?.image} 
+                                src={SHOP_HEAD_ITEMS.find(item => item.id === equippedItems[SHOP_TABS[2]])?.image} 
                                 alt="Head" 
                                 className="absolute inset-0 h-full w-full object-contain"
                               />
                             )}
-                            {equippedItems.eyes && (
+                            {equippedItems[SHOP_TABS[3]] && (
                               <img 
-                                src={SHOP_EYE_ITEMS.find(item => item.id === equippedItems.eyes)?.image} 
+                                src={SHOP_EYE_ITEMS.find(item => item.id === equippedItems[SHOP_TABS[3]])?.image} 
                                 alt="Eyes" 
                                 className="absolute inset-0 h-full w-full object-contain"
                               />
                             )}
-                            {equippedItems.mouth && (
+                            {equippedItems[SHOP_TABS[4]] && (
                               <img 
-                                src={SHOP_MOUTH_ITEMS.find(item => item.id === equippedItems.mouth)?.image} 
+                                src={SHOP_MOUTH_ITEMS.find(item => item.id === equippedItems[SHOP_TABS[4]])?.image} 
                                 alt="Mouth" 
                                 className="absolute inset-0 h-full w-full object-contain"
                               />
                             )}
-                            {equippedItems.accessory && (
+                            {equippedItems[SHOP_TABS[5]] && (
                               <img 
-                                src={SHOP_ACCESSORY_ITEMS.find(item => item.id === equippedItems.accessory)?.image} 
+                                src={SHOP_ACCESSORY_ITEMS.find(item => item.id === equippedItems[SHOP_TABS[5]])?.image} 
                                 alt="Accessory" 
                                 className="absolute inset-0 h-full w-full object-contain"
                               />
@@ -437,6 +629,60 @@ export const Navbar = ({
                         <p className="text-sm text-center text-gray-600 dark:text-gray-300">
                           Mix and match parts to create your unique Worboo!
                         </p>
+                      </div>
+                    )}
+                    
+                    {/* Treasure Shop */}
+                    {activeTab === SHOP_TABS[6] && (
+                      <div className="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                        <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
+                          Treasure Shop
+                        </h4>
+                        <div className="flex justify-center mb-4">
+                          <div className="relative h-40 w-40">
+                            {/* This would be a composite image in a real implementation */}
+                            {/* For now we'll just show the most recently equipped part */}
+                            {ownedChests.wooden_chest > 0 && (
+                              <img 
+                                src={SHOP_TREASURE_ITEMS.find(item => item.id === 'wooden_chest')?.image} 
+                                alt="Wooden Chest" 
+                                className="absolute inset-0 h-full w-full object-contain"
+                              />
+                            )}
+                            {ownedChests.silver_chest > 0 && (
+                              <img 
+                                src={SHOP_TREASURE_ITEMS.find(item => item.id === 'silver_chest')?.image} 
+                                alt="Silver Chest" 
+                                className="absolute inset-0 h-full w-full object-contain"
+                              />
+                            )}
+                            {ownedChests.diamond_chest > 0 && (
+                              <img 
+                                src={SHOP_TREASURE_ITEMS.find(item => item.id === 'diamond_chest')?.image} 
+                                alt="Diamond Chest" 
+                                className="absolute inset-0 h-full w-full object-contain"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm text-center text-gray-600 dark:text-gray-300">
+                          Open chests to receive rewards!
+                        </p>
+                        <div className="flex justify-center">
+                          {openingChest && (
+                            <button
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                              onClick={() => handleOpenChest(openingChest)}
+                            >
+                              Open Chest
+                            </button>
+                          )}
+                          {rewardMessage && (
+                            <p className="text-sm text-center text-gray-600 dark:text-gray-300">
+                              {rewardMessage}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

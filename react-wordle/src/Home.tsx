@@ -64,7 +64,7 @@ function Home() {
   ).matches
 
   // 提示相关的hooks
-  const { showError: showErrorAlert, showSuccess: showSuccessAlert } =
+  const { showError: showErrorAlert, showSuccess: showSuccessAlert, clearAlert } =
     useAlert()
   // 游戏状态相关的state
   const [currentGuess, setCurrentGuess] = useState('') // 当前猜测的单词
@@ -137,12 +137,16 @@ function Home() {
       return
     }
 
+    // 钱包已连接，清除错误消息
+    clearAlert()
+    
     // 从 localStorage 获取今天的猜测次数
     const today = new Date().toISOString().split('T')[0]
     const guessesKey = `${address}-${today}-guesses`
-    const usedGuesses = parseInt(localStorage.getItem(guessesKey) || '0')
-    setRemainingGuesses(10 - usedGuesses)
-  }, [isConnected, address])
+    const storedGuesses = localStorage.getItem(guessesKey)
+    const guessesCount = storedGuesses ? parseInt(storedGuesses) : 0
+    setRemainingGuesses(10 - guessesCount)
+  }, [isConnected, address, showErrorAlert, clearAlert])
 
   // 更新剩余猜测次数
   const updateRemainingGuesses = () => {
@@ -220,6 +224,9 @@ function Home() {
     setIsWordDetailModalOpen(false)
     setIsStatsModalOpen(false)
     
+    // 清除任何显示的错误提示，特别是"The word was..."
+    clearAlert()
+    
     // 延迟300ms后更新游戏状态
     setTimeout(() => {
       const newState = markCurrentWordAsCompleted()
@@ -278,7 +285,7 @@ function Home() {
 
   const onChar = (value: string) => {
     if (!isConnected) {
-      showErrorAlert('Please connect your wallet first')
+      showErrorAlert('Please connect your wallet first', { persist: false })
       return
     }
     
@@ -305,7 +312,7 @@ function Home() {
 
   const onEnter = () => {
     if (!isConnected) {
-      showErrorAlert('Please connect your wallet first')
+      showErrorAlert('Please connect your wallet first', { persist: false })
       return
     }
     

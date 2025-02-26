@@ -296,7 +296,7 @@ export const ProfileSidebar = ({ isOpen, setIsOpen }: Props) => {
                               <Disclosure.Button className="flex w-full items-center justify-between rounded-lg bg-purple-50 dark:bg-purple-900/20 px-4 py-3 text-left hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
                                 <div className="flex items-center space-x-3">
                                   <GiftIcon className="h-6 w-6 text-purple-500 dark:text-purple-400" />
-                                  <span className="font-medium text-purple-900 dark:text-purple-100">Worboo Inventory</span>
+                                  <span className="font-medium text-purple-900 dark:text-purple-100">Worboo Badge</span>
                                 </div>
                                 <ChevronDownIcon
                                   className={`${open ? 'rotate-180 transform' : ''} h-5 w-5 text-purple-500`}
