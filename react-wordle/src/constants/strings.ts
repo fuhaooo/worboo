@@ -365,3 +365,40 @@ export const SHOP_ITEMS: ShopItem[] = [
   ...SHOP_ACCESSORY_ITEMS,
   ...SHOP_TREASURE_ITEMS
 ]
+
+// Vocabulary Library
+export const VOCABULARY_TITLE = 'Vocabulary Library'
+export const VOCABULARY_SUBTITLE = 'Choose your word difficulty level'
+export const VOCABULARY_TABS = ['Junior High', 'Senior High', 'CET-4', 'CET-6', 'IELTS', 'TOEFL', 'SAT']
+
+// Vocabulary descriptions
+export const VOCABULARY_DESCRIPTIONS = {
+  'Junior High': 'Basic vocabulary suitable for beginners. Includes common everyday words.',
+  'Senior High': 'Intermediate vocabulary with more complex words and phrases.',
+  'CET-4': 'College English Test Level 4 vocabulary for undergraduate students.',
+  'CET-6': 'College English Test Level 6 vocabulary with advanced terms.',
+  'IELTS': 'International English Language Testing System vocabulary for academic and general training.',
+  'TOEFL': 'Test of English as a Foreign Language vocabulary for academic settings.',
+  'SAT': 'Scholastic Assessment Test vocabulary with focus on analytical and critical thinking.'
+}
+
+// Learning Plan
+export const LEARNING_PLAN_TITLE = 'Learning Plan'
+export const LEARNING_PLAN_SUBTITLE = 'Set your daily learning goals'
+export const LEARNING_PLAN_OPTIONS = [
+  { id: 'beginner', name: 'Beginner', wordsPerDay: 5, description: '5 words per day' },
+  { id: 'intermediate', name: 'Intermediate', wordsPerDay: 10, description: '10 words per day' },
+  { id: 'advanced', name: 'Advanced', wordsPerDay: 15, description: '15 words per day' },
+  { id: 'expert', name: 'Expert', wordsPerDay: 20, description: '20 words per day' },
+  { id: 'custom', name: 'Custom', wordsPerDay: 0, description: 'Set your own goal' }
+]
+
+// Vocabulary Library Types
+export interface VocabularySet {
+  id: string;
+  name: string;
+  description: string;
+  wordCount: number;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Very Hard';
+  isActive: boolean;
+}

@@ -10,6 +10,7 @@ import {
   GiftIcon,
   UserCircleIcon,
   XIcon,
+  BookOpenIcon
 } from '@heroicons/react/outline'
 import {
   GAME_TITLE,
@@ -37,6 +38,7 @@ import {
 import { ConnectButton, useConnectModal } from '@rainbow-me/rainbowkit'
 import { ProfileSidebar } from '../sidebar/ProfileSidebar'
 import { useAccount } from 'wagmi'
+import { VocabularyModal } from '../vocabulary/VocabularyModal'
 
 type Props = {
   setIsInfoModalOpen: (value: boolean) => void
@@ -57,6 +59,7 @@ export const Navbar = ({
 }: Props) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isShopModalOpen, setIsShopModalOpen] = useState(false)
+  const [isVocabularyModalOpen, setIsVocabularyModalOpen] = useState(false)
   const [selectedWorboo, setSelectedWorboo] = useState<string | null>(null)
   const [equippedWorboo, setEquippedWorboo] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState(SHOP_TABS[0])
@@ -266,6 +269,13 @@ export const Navbar = ({
       <div className="navbar-content px-5">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsVocabularyModalOpen(true)}
+              className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Open vocabulary library"
+            >
+              <BookOpenIcon className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+            </button>
             {isConnected && (
               <button
                 onClick={() => setIsSidebarOpen(true)}
@@ -692,6 +702,12 @@ export const Navbar = ({
           </div>
         </Dialog>
       </Transition.Root>
+      
+      {/* Vocabulary Modal */}
+      <VocabularyModal
+        isOpen={isVocabularyModalOpen}
+        handleClose={() => setIsVocabularyModalOpen(false)}
+      />
     </div>
   )
 }
